@@ -17,7 +17,7 @@ AniMathIO's interface is designed with clarity and functionality in mind, divide
 
 - **File**: Quit the application
 - **Settings**: Configure application theme, optionally you can set Gemini 2.0 Flash API key, and can view keyboard shortcuts. Your preference and API key will be saved for future sessions
-- **Help**: Opens the AniMathIO documentation
+- **Help**: From here you can access the documentation, the website and the community Discord server
 
 ### Left Sidebar
 
@@ -27,6 +27,7 @@ The left sidebar contains all the tools and components you'll need to create you
 - **Images**: Import and manage your images
 - **Mathematical Objects**: Access various mathematical components like points, lines, functions, and more
 - **Audios**: Import and manage your audio files
+- **Audio Mixer**: Control the volume of your audio files
 - **Text**: Create and manage text elements
 - **Animations**: Create and manage animations
 - **Effects**: Apply various effects to your images and videos

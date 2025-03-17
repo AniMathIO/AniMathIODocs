@@ -74,6 +74,24 @@ Audio can provide narration, explanations, or background music to enhance your a
 
 ![Adding Audio](./img/add-audio.png)
 
+### Recording Audio
+
+1. In the left sidebar, click on the **Audios** option
+2. Click the **Settings Icon** to select your microphone
+3. Click the **Record Audio** button
+![Recording Audio](./img/record-audio-select-mic.png)
+4. While recording you can **Pause** or **Stop** the recording by clicking the **Pause** or **Stop** buttons
+![Recording Audio Stop](./img/record-stop-audio.png)
+5. After you click the **Stop** button, the recorded audio will appear in a preview where you can listen to it and decide to **Discard** or **Add to project** it
+![Recording Audio Add](./img/record-add-audio.png)
+6. This will add the recorded audio to the **Audio Resources** section of your project, and now you can use the [adding audio files steps](#adding-audio-files) to add the audio to the media pool, timeline and canvas
+![Adding Audio](./img/record-add-audio-to-project.png)
+
+### Audio Mixer
+
+You can use the audio mixer to adjust the volume your audio files.
+![Audio Mixer](./img/audio-mixer.png)
+
 ## Combining Multimedia with Mathematical Elements
 
 The power of AniMathIO comes from combining multimedia with mathematical components:
@@ -82,7 +100,7 @@ The power of AniMathIO comes from combining multimedia with mathematical compone
 
 1. Add a video demonstrating a real-world phenomenon
 2. Overlay mathematical elements (graphs, equations) that explain the phenomenon
-3. Add audio narration explaining the connection or add background music
+3. Add audio narration explaining the connection or add background music (or both and adjust the volume with the audio mixer)
 4. Use animations to synchronize the mathematical elements with specific moments in the video
 
 ## Tips for Effective Multimedia Use

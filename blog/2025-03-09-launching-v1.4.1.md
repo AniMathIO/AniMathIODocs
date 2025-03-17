@@ -51,7 +51,7 @@ Along with this release, we're proud to launch our comprehensive documentation s
 
 If you're new to AniMathIO or want to explore the latest features:
 
-1. [Download the latest version](https://animathio.com/download)
+1. [Download the latest version](https://animathio.com)
 2. Visit our [new documentation site](https://docs.animathio.com) for tutorials
 3. Join our [community forum](https://community.animathio.com) to share your creations
 
