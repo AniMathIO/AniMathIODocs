@@ -8,6 +8,13 @@ Let's explore the AniMathIO interface to help you navigate and use the software 
 
 ## Main Layout
 
+### Dashboard
+
+When you first launch AniMathIO, you'll see the **dashboard** where you can view recent projects, create new ones, or open existing projects. After selecting or creating a project, you'll enter the **editor interface** described below.
+
+![AniMathIO Dashboard Overview](./img/dashboard-overview.png)
+
+### Editor Interface
 AniMathIO's interface is designed with clarity and functionality in mind, divided into several key areas:
 
 ![AniMathIO Menu Bar Overview](./img/menu-bar.png)
@@ -32,7 +39,7 @@ The left sidebar contains all the tools and components you'll need to create you
 - **Animations**: Create and manage animations
 - **Effects**: Apply various effects to your images and videos
 - **Background Fill**: Customize the background color
-- **Export**: Set video lenght, aspect ratio, format. Here you can save/load your project or render it as a video after you're done
+- **Export**: Set video lenght, aspect ratio, format. Here you can save/save as your project or render it as a video after you're done
 
 ### Secondary Left Sidebar - Media Pool
 

@@ -8,6 +8,8 @@ authors: MemerGamer
 
 We're thrilled to announce the release of AniMathIO v1.5.0! This update brings significant improvements to our mathematical animation software, focusing on enhanced testing infrastructure, better user experience, and exciting new audio features.
 
+<!-- truncate -->
+
 ## What's New in v1.5.0
 
 ### Enhanced User Experience

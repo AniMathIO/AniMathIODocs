@@ -23,8 +23,10 @@ You can get AniMathIO by downloading it from our official sources.
 
 - **Linux**:
 
-  - **.deb** package for Debian-based distributions
   - **.AppImage** for universal Linux support
+  - **.flatpak** for universal Linux support
+  - **.snap** for universal Linux support
+  - **.deb** for Debian-based distributions
 
 - **macOS**:
   - **.dmg** package
@@ -42,8 +44,13 @@ You can get AniMathIO by downloading it from our official sources.
 After installation:
 
 1. Open AniMathIO from your applications menu or desktop shortcut
-2. You'll be greeted with the main editor interface
-3. Start creating by adding your first mathematical component from the `Mathematical objects` section in the left sidebar
+2. You'll be greeted with the **dashboard** showing your recent projects
+3. From the dashboard, you can:
+   - **Create a new project** by clicking the "New Project" button
+   - **Open an existing project** by selecting it from the recent projects list
+   - **Search and filter** your projects to quickly find what you're looking for
+4. After selecting or creating a project, the **editor interface** will open
+5. Start creating by adding your first mathematical component from the `Mathematical objects` section in the left sidebar
 
 > **Important**: The application will **NOT** automatically save your projects state! Save your work regularly by navigating to the `Export` section in the left sidebar, where you can save as an `.animathio` project or export as a video.
 
@@ -51,16 +58,17 @@ After installation:
 
 Let's create a simple animation:
 
-1. Click on `Mathematical objects` section in the left sidebar
-2. Select a component from the toolbar (try "Point" to start)
-3. Set the width and height of the component
-4. Adjust properties such as coordinates type, x and y coordinates
-5. You can optionally disable pan and zoom
-6. Click on the "Add Element" button to add the component to the canvas
-7. Now you can see your component in the canvas, in the media pool and in the timeline as well
-8. You can freely move and resize the component to your liking
-9. In the timeline, you can set the start and end times of the animation by dragging the start and end handles
-10. Click on `Export` section in the left sidebar to save the project as an `.animathio` file or export it as an `.mp4` or `.webm` video file
+1. From the dashboard, create a new project or open an existing one
+2. Once in the editor, click on `Mathematical objects` section in the left sidebar
+3. Select a component from the toolbar (try "Point" to start)
+4. Set the width and height of the component
+5. Adjust properties such as coordinates type, x and y coordinates
+6. You can optionally disable pan and zoom
+7. Click on the "Add Element" button to add the component to the canvas
+8. Now you can see your component in the canvas, in the media pool and in the timeline as well
+9. You can freely move and resize the component to your liking
+10. In the timeline, you can set the start and end times of the animation by dragging the start and end handles
+11. Click on `Export` section in the left sidebar to save the project as an `.animathio` file or export it as an `.mp4` or `.webm` video file
 
 ### Tips for New Users
 

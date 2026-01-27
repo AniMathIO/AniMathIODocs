@@ -11,20 +11,11 @@ After creating your mathematical animation, you'll want to export it as a video 
 It's important to save your work regularly. AniMathIO projects are saved in the `.animathio` format, which preserves all your elements, settings, and timeline information:
 
 1. In the left sidebar, click on the **Export** option
-2. In the **Save/Load Project** section, click the **Save** button
+2. In the **Save/Save as Project** section, click the **Save** button
 3. Choose a location and filename for your project
 4. Click **Save**
 
 ![Saving a Project](./img/export-settings.png)
-
-## Loading a Saved Project
-
-To continue working on a previously saved project:
-
-1. In the left sidebar, click on the **Export** option
-2. In the **Save/Load Project** section, click the **Load** button
-3. Navigate to your saved `.animathio` file
-4. Click **Open**
 
 ## Setting Video Export Parameters
 
