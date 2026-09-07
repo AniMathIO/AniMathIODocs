@@ -40,6 +40,7 @@ The left sidebar contains all the tools and components you'll need to create you
 - **Effects**: Apply various effects to your images and videos
 - **Background Fill**: Customize the background color
 - **Export**: Set video lenght, aspect ratio, format. Here you can save/save as your project or render it as a video after you're done
+- **Manim Import**: Paste or load a Manim Community Python scene and turn it into editable timeline elements — see [Importing Manim Scenes](../tutorial-advanced/importing-manim-scenes.md)
 
 ### Secondary Left Sidebar - Media Pool
 
