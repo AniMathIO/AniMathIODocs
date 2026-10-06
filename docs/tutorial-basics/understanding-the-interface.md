@@ -23,7 +23,7 @@ AniMathIO's interface is designed with clarity and functionality in mind, divide
 ### Menu Bar
 
 - **File**: Quit the application
-- **Settings**: Configure application theme, optionally you can set Gemini 2.0 Flash API key, and can view keyboard shortcuts. Your preference and API key will be saved for future sessions
+- **Settings**: Configure the application theme and Gemini API settings, view keyboard shortcuts, and optionally enable the local MCP server for [AI agent integration](../tutorial-advanced/ai-agent-integration.md). MCP is disabled by default; Settings provides the endpoint URL and authentication token for your client. Your preferences are saved for future sessions.
 - **Help**: From here you can access the documentation, the website and the community Discord server
 
 ### Left Sidebar
