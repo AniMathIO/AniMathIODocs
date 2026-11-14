@@ -29,3 +29,10 @@
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 
+
+/* Author photos are portrait shots; crop them into the round avatar instead of squashing. */
+.avatar__photo {
+  object-fit: cover;
+  object-position: center top;
+  aspect-ratio: 1;
+}
