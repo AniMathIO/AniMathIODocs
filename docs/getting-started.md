@@ -4,10 +4,6 @@ sidebar_position: 1
 
 # Getting Started with AniMathIO
 
-:::caution Legacy documentation
-This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
-:::
-
 Let's discover **AniMathIO in less than 5 minutes** - your tool for creating mathematical videos without coding.
 
 ## Installation

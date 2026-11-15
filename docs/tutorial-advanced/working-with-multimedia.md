@@ -4,10 +4,6 @@ sidebar_position: 2
 
 # Working with Multimedia
 
-:::caution Legacy documentation
-This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
-:::
-
 AniMathIO allows you to enhance your mathematical animations with multimedia elements such as images, videos, and audio. This guide will show you how to incorporate these elements effectively.
 
 ## Working with Images

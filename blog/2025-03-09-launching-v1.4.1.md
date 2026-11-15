@@ -67,4 +67,4 @@ Thank you for using AniMathIO! We can't wait to see what you create.
 
 ## Full Changelogs
 
-[Changelog](https://github.com/AniMathIO/AniMathIO/blob/main/CHANGELOG.md)
+[Changelog](https://github.com/AniMathIO/AniMathIO/blob/v1.4.1/CHANGELOG.md)

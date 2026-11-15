@@ -73,6 +73,6 @@ Shortly after v1.7.0 we published **v1.7.1**, which restores the Flatpak build. 
 
 Thank you to everyone who reported issues and stuck with us through this one — the known-issues list that this release finally clears had been open a long time.
 
-For the complete list of changes, see the [full changelog](https://github.com/AniMathIO/AniMathIO/blob/main/CHANGELOG.md).
+For the complete list of changes, see the [full changelog](https://github.com/AniMathIO/AniMathIO/blob/animathio-v1.7.0/CHANGELOG.md).
 
 Happy animating! 🎨✨

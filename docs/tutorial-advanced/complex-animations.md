@@ -4,10 +4,6 @@ sidebar_position: 1
 
 # Creating Complex Animations
 
-:::caution Legacy documentation
-This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
-:::
-
 While basic animations in AniMathIO are straightforward, creating complex, multi-stage animations requires some planning and advanced techniques. This guide will help you create sophisticated mathematical animations that build up concepts step by step.
 
 ## Understanding Animation Types in AniMathIO

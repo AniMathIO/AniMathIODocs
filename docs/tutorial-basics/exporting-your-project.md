@@ -4,10 +4,6 @@ sidebar_position: 5
 
 # Exporting Your Project
 
-:::caution Legacy documentation
-This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
-:::
-
 After creating your mathematical animation, you'll want to export it as a video file or save your project for future editing. This guide explains the export options in AniMathIO.
 
 ## Saving Your Project
