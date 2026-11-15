@@ -4,6 +4,10 @@ sidebar_position: 4
 
 # Adding Text and LaTeX
 
+:::caution Legacy documentation
+This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
+:::
+
 Text and mathematical formulas are crucial for explaining concepts in educational videos. AniMathIO makes it easy to add both regular text and LaTeX mathematical notation to your projects.
 
 ## Adding Regular Text

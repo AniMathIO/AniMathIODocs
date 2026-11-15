@@ -4,6 +4,10 @@ sidebar_position: 4
 
 # AI Agent Integration
 
+:::caution Legacy documentation
+This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
+:::
+
 AniMathIO's MCP server lets an AI agent work directly in your editor. MCP (Model Context Protocol) is an open standard that lets agents call tools. Connect Claude Code, Claude Desktop, or another MCP-capable client to add text and equations, import Manim scripts and media files, create animations, and export finished videos — while you watch the changes appear live on the canvas.
 
 For example, you could ask Claude:

@@ -4,6 +4,10 @@ sidebar_position: 2
 
 # Working with Mathematical Components
 
+:::caution Legacy documentation
+This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
+:::
+
 Mathematical components are the building blocks of your animations in AniMathIO. This guide will walk you through adding and customizing these components.
 
 ## Accessing Mathematical Components

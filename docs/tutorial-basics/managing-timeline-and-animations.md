@@ -4,6 +4,10 @@ sidebar_position: 3
 
 # Managing Timeline and Animations
 
+:::caution Legacy documentation
+This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
+:::
+
 The timeline is where the magic happens in AniMathIO - it's where you control when elements appear, disappear, and how they animate over time. This guide will help you master timeline controls and create smooth animations.
 
 ## Understanding the Timeline

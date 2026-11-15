@@ -4,6 +4,10 @@ sidebar_position: 3
 
 # Importing Manim Scenes
 
+:::caution Legacy documentation
+This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
+:::
+
 AniMathIO can read a [Manim Community](https://www.manim.community/) Python scene and turn it into ordinary AniMathIO elements and animations on your timeline. If you already have Manim scripts, this is the fastest way to bring them into a project you can then edit visually.
 
 The import is a translation, not an emulation — AniMathIO does not run Python or Manim. It reads your script and rebuilds the equivalent elements natively, which means you can move, restyle and retime everything afterwards just like anything else you created by hand.

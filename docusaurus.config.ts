@@ -23,6 +23,9 @@ const config: Config = {
   onBrokenLinks: "throw",
 
   markdown: {
+    // The 2.0 reference pages are plain CommonMark adapted from the main repository: they contain
+    // HTML comments and angle brackets that MDX would reject.
+    format: "detect",
     hooks: {
       onBrokenMarkdownLinks: "warn",
     },
@@ -66,15 +69,21 @@ const config: Config = {
     navbar: {
       title: "AniMathIO",
       logo: {
-        alt: "My Site Logo",
+        alt: "AniMathIO logo",
         src: "img/AniMathIO.png",
       },
       items: [
         {
           type: "docSidebar",
-          sidebarId: "tutorialSidebar",
+          sidebarId: "v2Sidebar",
           position: "left",
-          label: "Getting Started",
+          label: "Docs (2.0)",
+        },
+        {
+          type: "docSidebar",
+          sidebarId: "v1Sidebar",
+          position: "left",
+          label: "v1 (legacy)",
         },
         { to: "/blog", label: "Blog", position: "left" },
         {
@@ -91,7 +100,11 @@ const config: Config = {
           title: "Docs",
           items: [
             {
-              label: "Getting Started",
+              label: "AniMathIO 2.0",
+              to: "/docs/v2/getting-started",
+            },
+            {
+              label: "v1 (legacy)",
               to: "/docs/getting-started",
             },
           ],
@@ -121,9 +134,15 @@ const config: Config = {
       ],
       copyright: `Copyright © ${new Date().getFullYear()} AniMathIO. Built with Docusaurus.`,
     },
+    colorMode: {
+      // The 2.0 editor is dark; the site follows it by default and keeps the toggle.
+      defaultMode: "dark",
+      respectPrefersColorScheme: true,
+    },
     prism: {
       theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      darkTheme: prismThemes.vsDark,
+      additionalLanguages: ["bash", "rust", "toml", "json"],
     },
   } satisfies Preset.ThemeConfig,
 };

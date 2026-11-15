@@ -4,6 +4,10 @@ sidebar_position: 5
 
 # Conclusion: Your Journey with AniMathIO
 
+:::caution Legacy documentation
+This page describes AniMathIO 1.x (the Electron app). For AniMathIO 2.0, start with the [2.0 documentation](/docs/v2/getting-started).
+:::
+
 Congratulations on completing the AniMathIO tutorials! You've learned how to create engaging, educational mathematical animations that can help explain complex concepts visually. Let's summarize what you've accomplished and explore where to go from here.
 
 ## What You've Learned
