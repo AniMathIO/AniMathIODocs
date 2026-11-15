@@ -1,83 +1,73 @@
 ---
+title: Getting started
+sidebar_label: Getting started
 sidebar_position: 1
+slug: /
+description: "What AniMathIO 2.0 is, how to install it and how to make your first video."
 ---
 
-# Getting Started with AniMathIO
+# Getting started with AniMathIO 2.0
 
-Let's discover **AniMathIO in less than 5 minutes** - your tool for creating mathematical videos without coding.
+AniMathIO 2.0 is a native editor for math animation videos, rewritten from scratch in Rust. The core is a
+small, reliable video editor: media clips, a multi-track timeline, transforms and keyframes, audio, preview
+and export. Everything math-specific (text, LaTeX, graphs, shapes, effects, importers) is a sandboxed
+WebAssembly plugin.
 
-## Installation
+![The AniMathIO 2.0 editor](/img/v2/editor-main.webp)
 
-You can get AniMathIO by downloading it from our official sources.
+:::note Coming from 1.x?
+The 1.x documentation is still online as [v1 (legacy)](/docs/v1/getting-started). Projects import with
+`animathio-cli import-v1`; see [Migrating from 1.x](./migrating-from-v1).
+:::
 
-### Download Options
+## What changed from 1.x
 
-- **Official Website**: [animathio.com](https://animathio.com)
-- **GitHub Releases**: [github.com/AniMathIO/AniMathIO/releases](https://github.com/AniMathIO/AniMathIO/releases)
+- **Native, not Electron.** The editor is a GPUI desktop application. Preview renders on the GPU when an
+  adapter is available and falls back to a CPU reference renderer, which is also what export uses.
+- **Plugins.** Text, shapes, LaTeX, graphs, clip effects, audio effects, animation presets and the Manim
+  importer are plugins that run in a sandbox with memory, fuel and time limits. See
+  [Plugin authoring](./plugins).
+- **Deterministic rendering.** One pure function of the project and a time produces every frame, so preview,
+  export and the test suite agree.
+- **Automation.** Local subtitles, autocut, scene cuts, auto reframe, beat sync, ducking and denoise. See
+  [Captions and automation](./captions-and-automation).
+- **Scriptable.** Every edit is a serializable, invertible command, available from the editor, the command
+  line ([CLI](./cli)) and MCP clients ([Control protocol and MCP](./mcp)).
+- **A new project format.** 2.0 saves `.amio` archives. 1.x `.animathio` projects import one way.
 
-### Available Versions
+## Install
 
-- **Windows**: **.exe** installer
+Download the installer for your platform from the [2.0 release](https://github.com/AniMathIO/AniMathIO/releases/tag/v2.0.0)
+and follow the [install page](./install). Each installer ships the editor (`animathio`), the command line tool
+(`animathio-cli`) and the first-party plugins.
 
-  > **Note**: Windows Defender might flag the application as suspicious because we don't have a certificate key yet. This is a false positive, and you can safely proceed with installation.
+## Your first video
 
-- **Linux**:
+1. **Start.** Launch AniMathIO. The start screen offers canvas presets (1080p, 4K, 9:16, square, 4:5),
+   templates, recent projects, and Open, Import v1 and Import Manim.
+2. **Add media.** Drop files on the Library, or press Ctrl+I. A video with sound adds a linked audio clip.
+3. **Add a math object.** Open the **Math** tab in the Library, pick LaTeX, Plot, Vector and so on, edit it in
+   the dialog and press Add. See [Math objects](./math-objects).
+4. **Edit.** Cut with the blade (C) or Ctrl+K, trim, move, and animate with keyframes or the animation
+   presets in the inspector. The default shortcuts follow Premiere Pro; see
+   [Keyboard shortcuts](./keyboard-shortcuts).
+5. **Export.** Press Export, choose a preset (for example `youtube_1080p` or `shorts_vertical`) and add it to
+   the queue. Exports run in the background and never block the editor.
 
-  - **.AppImage** for universal Linux support
-  - **.flatpak** for universal Linux support
-  - **.snap** for universal Linux support
-  - **.deb** for Debian-based distributions
+![The start screen with canvas presets and recent projects](/img/v2/editor-start.webp)
 
-- **macOS**:
-  - **.dmg** package
-    > **Warning**: The macOS version (v1.3.0) is legacy and might not work properly on newer systems. Use with caution. The latest features available in v1.4.1 are not available for macOS.
+## Working from the command line
 
-## System Requirements
+```bash
+animathio-cli new-sample -o sample.amio
+animathio-cli render sample.amio --frame 30 -o frame.png
+animathio-cli export sample.amio --output sample.mp4
+```
 
-- A modern operating system (Windows 10+, Ubuntu 20.04+, or macOS 11+)
-- 8GB RAM minimum
-- 800MB of free disk space
-- Graphics card with OpenGL support
+The [CLI reference](./cli) lists every subcommand.
 
-## Launch AniMathIO
+## Where to go next
 
-After installation:
-
-1. Open AniMathIO from your applications menu or desktop shortcut
-2. You'll be greeted with the **dashboard** showing your recent projects
-3. From the dashboard, you can:
-   - **Create a new project** by clicking the "New Project" button
-   - **Open an existing project** by selecting it from the recent projects list
-   - **Search and filter** your projects to quickly find what you're looking for
-4. After selecting or creating a project, the **editor interface** will open
-5. Start creating by adding your first mathematical component from the `Mathematical objects` section in the left sidebar
-
-> **Important**: The application will **NOT** automatically save your projects state! Save your work regularly by navigating to the `Export` section in the left sidebar, where you can save as an `.animathio` project or export as a video.
-
-## Your First Project
-
-Let's create a simple animation:
-
-1. From the dashboard, create a new project or open an existing one
-2. Once in the editor, click on `Mathematical objects` section in the left sidebar
-3. Select a component from the toolbar (try "Point" to start)
-4. Set the width and height of the component
-5. Adjust properties such as coordinates type, x and y coordinates
-6. You can optionally disable pan and zoom
-7. Click on the "Add Element" button to add the component to the canvas
-8. Now you can see your component in the canvas, in the media pool and in the timeline as well
-9. You can freely move and resize the component to your liking
-10. In the timeline, you can set the start and end times of the animation by dragging the start and end handles
-11. Click on `Export` section in the left sidebar to save the project as an `.animathio` file or export it as an `.mp4` or `.webm` video file
-
-### Tips for New Users
-
-- Use the **dark/light mode** toggle in the settings to adjust the interface to your preference
-- Try the **keyboard shortcuts** for common actions, more details in the settings (available in the latest releases)
-- Start with simple components before creating complex animations
-- For text with mathematical formulas, use the built-in LaTeX support
-- You can use Text-to-Latex feature with a Gemini 2.0 Flash API key, more details about this feature in the settings
-
-Congratulations! You've created your first mathematical visualization with AniMathIO.
-
-Open the [Examples](https://animathio.com/examples) to explore pre-made projects and learn more about what's possible.
+- [The editor](./editor): panels, timeline, viewer, inspector and export.
+- [Math objects](./math-objects) and [Captions and automation](./captions-and-automation).
+- [Plugin authoring](./plugins), [CLI](./cli) and [MCP](./mcp) if you want to extend or script AniMathIO.

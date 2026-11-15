@@ -67,4 +67,4 @@ Debug binaries find `target/plugins` on their own.
 2.0 uses a different project format (`.amio`). Convert a 1.x project with
 `animathio-cli import-v1 project.animathio -o imported.amio`, or use **Import v1** on the start screen. See
 [Migrating from 1.x](./migrating-from-v1). The 1.x installers and documentation remain available as
-[v1 (legacy)](/docs/getting-started).
+[v1 (legacy)](/docs/v1/getting-started).

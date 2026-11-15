@@ -20,7 +20,7 @@ It supports a practical subset of Manim — `Text`, `Tex`, `MathTex`, `Circle`, 
 
 This is a translation, not an emulation: AniMathIO doesn't run Python, so there's nothing extra to install.
 
-See [Importing Manim Scenes](/docs/tutorial-advanced/importing-manim-scenes) for the full guide.
+See [Importing Manim Scenes](/docs/v1/tutorial-advanced/importing-manim-scenes) for the full guide.
 
 ### A New Canvas Engine
 

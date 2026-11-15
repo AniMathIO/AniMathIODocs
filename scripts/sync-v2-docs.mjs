@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Adapts the reference pages of the 2.0 docs from the main AniMathIO repository (branch `v2`,
-// later `main`) into docs/v2/. The generated pages are committed, so `npm run build` never needs
+// later `main`) into docs/. The generated pages are committed, so `npm run build` never needs
 // the other checkout. Hand-written pages (getting started, install, editor tour, math objects,
 // captions and automation) are not touched.
 //
@@ -21,7 +21,7 @@ const opt = (name, fallback) => {
 const source = resolve(opt('--source', '../AniMathIO'));
 const ref = opt('--ref', 'v2.0.0');
 const repoBlob = `https://github.com/AniMathIO/AniMathIO/blob/${ref}`;
-const out = resolve('docs/v2');
+const out = resolve('docs');
 
 /** Source file, output slug, sidebar position, title and description. */
 const pages = [
@@ -69,7 +69,7 @@ for (const [file, slug, position, title, description] of pages) {
     '',
   ].join('\n');
   writeFileSync(join(out, `${slug}.md`), front + body);
-  console.log(`docs/v2/${slug}.md`);
+  console.log(`docs/${slug}.md`);
 }
 
 if (args.includes('--images')) {

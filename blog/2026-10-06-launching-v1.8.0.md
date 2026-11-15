@@ -22,6 +22,6 @@ Version 1.8 includes 13 tools in total, with two new additions:
 
 ## Keep an editable copy
 
-Use `save_project` separately to save an editable project. Read the [AI agent integration guide](/docs/tutorial-advanced/ai-agent-integration) for client setup, all 13 tools, and examples. Download the release from [GitHub](https://github.com/AniMathIO/AniMathIO/releases/tag/animathio-v1.8.0).
+Use `save_project` separately to save an editable project. Read the [AI agent integration guide](/docs/v1/tutorial-advanced/ai-agent-integration) for client setup, all 13 tools, and examples. Download the release from [GitHub](https://github.com/AniMathIO/AniMathIO/releases/tag/animathio-v1.8.0).
 
 Use a generous client timeout for exports and avoid editing or changing playback while recording. The tool reports recording, conversion, and writing failures instead of reporting a partial file as a successful export.
