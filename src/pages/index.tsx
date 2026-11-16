@@ -21,7 +21,7 @@ function HomepageHeader() {
           <Link
             className="button button--secondary button--lg"
             to="/docs">
-            Get started with AniMathIO 2.0
+            Get started with AniMathIO 2
           </Link>
         </div>
       </div>

@@ -2,7 +2,7 @@
 title: The editor
 sidebar_label: The editor
 sidebar_position: 3
-description: "A tour of the AniMathIO 2.0 editor: library, viewer, inspector, timeline and export."
+description: "A tour of the AniMathIO 2 editor: library, viewer, inspector, timeline and export."
 ---
 
 # The editor

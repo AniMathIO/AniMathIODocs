@@ -3,17 +3,17 @@ title: Getting started
 sidebar_label: Getting started
 sidebar_position: 1
 slug: /
-description: "What AniMathIO 2.0 is, how to install it and how to make your first video."
+description: "What AniMathIO 2 is, how to install it and how to make your first video."
 ---
 
-# Getting started with AniMathIO 2.0
+# Getting started with AniMathIO 2
 
-AniMathIO 2.0 is a native editor for math animation videos, rewritten from scratch in Rust. The core is a
+AniMathIO 2 is a native editor for math animation videos, rewritten from scratch in Rust. The core is a
 small, reliable video editor: media clips, a multi-track timeline, transforms and keyframes, audio, preview
 and export. Everything math-specific (text, LaTeX, graphs, shapes, effects, importers) is a sandboxed
 WebAssembly plugin.
 
-![The AniMathIO 2.0 editor](/img/v2/editor-main.webp)
+![The AniMathIO 2 editor](/img/v2/editor-main.webp)
 
 :::note Coming from 1.x?
 The 1.x documentation is still online as [v1 (legacy)](/docs/v1/getting-started). Projects import with
@@ -33,7 +33,7 @@ The 1.x documentation is still online as [v1 (legacy)](/docs/v1/getting-started)
   [Captions and automation](./captions-and-automation).
 - **Scriptable.** Every edit is a serializable, invertible command, available from the editor, the command
   line ([CLI](./cli)) and MCP clients ([Control protocol and MCP](./mcp)).
-- **A new project format.** 2.0 saves `.amio` archives. 1.x `.animathio` projects import one way.
+- **A new project format.** AniMathIO 2 saves `.amio` archives. 1.x `.animathio` projects import one way.
 
 ## Install
 

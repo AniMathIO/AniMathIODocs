@@ -9,7 +9,9 @@ description: "Write a sandboxed WebAssembly plugin: WIT world, host imports, man
 
 # Plugin authoring
 
-AniMathIO 2.0 plugins are sandboxed **WebAssembly components** (wasmtime,
+Start with the [plugin template, examples and community index](https://github.com/AniMathIO/plugins).
+
+AniMathIO 2 plugins are sandboxed **WebAssembly components** (wasmtime,
 [Component Model](https://component-model.bytecodealliance.org/), WIT). Each plugin
 is compiled to `wasm32-wasip2` and packaged as an `.amplugin` — a zip containing
 `plugin.toml` (metadata) and `plugin.wasm` (the component).
@@ -97,8 +99,8 @@ the importer world imports (`import-files`). 1.1 changes no existing record, enu
 variant, function or world, so every 1.0 component loads and runs unchanged (the
 checked-in frozen `hello-1.0.0` fixture and the 0.2.x fixtures are tested against this
 host). ABI semver is independent of the
-application's 2.0 version and each plugin's own version. The Rust SDK crate keeps
-its workspace version (2.0.0); `API_VERSION` identifies the component ABI. Its
+application's version and each plugin's own version. The Rust SDK crate keeps
+its workspace version; `API_VERSION` identifies the component ABI. Its
 host-side kind and error enums are non-exhaustive so SDK callers handle future
 host classifications/errors with a fallback. Package `api_version` is
 an exact stable semantic version naming the **minimum host ABI required**, not a
@@ -1054,7 +1056,7 @@ endpoint follows the same curve. Sampling
 uses 256 base intervals with at most four subdivision levels; nonfinite
 evaluations or unresolved discontinuities break the path.
 This remains plugin data and needs no project schema change.
-The [showcase builders](https://github.com/AniMathIO/AniMathIO/blob/v2.0.0/examples/showcase/README.md) exercise this with a unit
+The [showcase builders](https://github.com/AniMathIO/AniMathIO/blob/main/examples/showcase/README.md) exercise this with a unit
 circle, independent function-chart axes and a subdued grid.
 
 Function plots are clipped to the graph viewport. Adaptive subdivision breaks

@@ -9,7 +9,7 @@ description: "Crate map, layering, the time model and the data flow."
 
 # Architecture
 
-This document describes the 2.0 crate map, the layering rules, the time model and
+This document describes the AniMathIO 2 crate map, the layering rules, the time model and
 the render/audio/export data flow. The authority for these rules is
 [issue #156](https://github.com/AniMathIO/AniMathIO/issues/156).
 
@@ -102,7 +102,10 @@ under `editor/`: `menus`, `workspace`, `viewer`, `transport`, `timeline_view`,
 `fields`, `audio_effects` (inspector audio-effect cards), `animations` (the inspector
 Animations section and the Effects-tab preset library), `video_effects` (inspector video-effect cards), `inspector_view`, `media_pool`, `math` (Math tab, typed object dialog and inspector), `titles` (Titles tab), `dialogs`, `export_panel`
 (export queue popover), `start_screen`, `templates`, `clip_ops`, `commands`, `project_io`,
-`control_bridge`, `playback_glue`, `timeline_thumbnails` and `actions`. Shared drawing/resource helpers live in
+`control_bridge`, `playback_glue`, `timeline_thumbnails`, `actions` and `update_check`
+(at most one GitHub releases lookup per 24 h, a dismissable newer-release notice,
+opt-out in Preferences or with `ANIMATHIO_NO_UPDATE_CHECK=1`, silent on failure).
+Shared drawing/resource helpers live in
 `support`; `color_edit` owns the live-preview transaction (colour pickers, sliders,
 number scrubbing and the viewer's transform gizmo all preview through it, so one
 gesture is one history entry). The gizmo maths in `viewer` shares the renderer's
@@ -180,9 +183,18 @@ once in `History`. Other commands and control calls finish a pending drag first,
 so a colour change undoes in one step without swallowing adjacent edits. Asset
 parameter selectors display names but commit asset identities (or `null` for None).
 
+The undo stack is depth-capped (`History::with_limit`, default 500 entries);
+the oldest entries are dropped. This bounds entry count, not bytes; dirty
+state is tracked independently of whether undo is available.
+
+Plain-JSON saves validate referenced asset bytes, atomically replace each
+content-addressed sidecar, then publish the manifest. Failed sidecar writes
+preserve the old manifest; already written unused assets may remain. Unix saves
+also try to sync the containing directory after replacement (best effort).
+
 ## Time model (integer ticks)
 
-AniMathIO 2.0 uses **integer ticks** at a fixed rate, with **rational frame rates**
+AniMathIO 2 uses **integer ticks** at a fixed rate, with **rational frame rates**
 on top. The rate is 705,600,000 ticks per second — the *flicks* constant, chosen so
 frame and audio-sample boundaries are always exact:
 
@@ -212,7 +224,7 @@ boundary.
 
 Each rule exists because of a specific v1 failure, and each is enforced by a test.
 
-| v1 failure | 2.0 rule | Enforced by |
+| v1 failure | AniMathIO 2 rule | Enforced by |
 | --- | --- | --- |
 | Live Konva nodes, `<video>`/`<audio>` elements and `AudioContext` source nodes stored next to project data; leaked contexts and silent preview after export. | **The project is plain data.** Decoders, GPU textures and audio streams live in an engine-owned resource pool keyed by asset hash. Removing a clip never has to release anything. | `core` has no IO/GPU deps; after deleting every clip and running GC the pool is empty. |
 | Animations in a separate anime.js timeline seeked in parallel with the store. | **Animated values are always computed from (project, t)** and never kept in a second stateful object. Keyframes are data. | Property test: rendering at `t` is independent of which times were rendered or seeked before. |
@@ -880,3 +892,30 @@ backends paint it before clips; preview, PNG rendering and video export share th
 policy. New default projects remain transparent; templates retain their configured
 backgrounds. Math input nesting is limited to 64 levels and native typesetting
 workers use an explicit 64 MiB stack.
+
+## Bundled effects and presets
+
+Text, shapes and the eight clip effects (grayscale, sepia, invert, saturate, brightness,
+contrast, blur, opacity) use the bundled WASM components end to end, including CLI renders
+and exports. Build them with `scripts/build-plugins.sh`; schema-1 and schema-2 projects
+migrate automatically to plugin clips and plugin effects when loaded.
+
+Animation presets are plugins too: `org.animathio.animations` offers fade, slide, zoom,
+pop, spin, bounce, wipe and typewriter in/out presets plus breathe, shake, spin, hop and
+flash emphasis. Pick them in the inspector's **Animations** section (In / Out / Emphasis,
+with a duration stepper) or the Effects library, through the `apply_animation_preset` MCP
+tool or `animathio-cli animations apply`. A preset becomes ordinary keyframes in one undo
+step, so projects render and export without the plugin.
+
+Audio effects are plugins too: `org.animathio.audio-basic` provides gain/trim, a 3-band EQ,
+compressor, noise gate, high-pass filter, a voice-cleanup preset (high-pass + gentle gate +
+de-esser) and `denoise` (spectral gating that learns the noise from the quietest frames). Clips and tracks carry ordered, undoable audio-effect chains that run in the shared
+mixer, so preview and export sound identical; edit them in the inspector's Audio section, the
+Effects library or the `list_audio_effects` / `add_audio_effect` MCP tools. Open a track header’s
+**Audio effects** context-menu entry to edit its chain with the same controls. Clip audio-effect
+parameters have keyframe controls, and parameter drags update playback live (throttled snapshots for the mix worker, never the
+device callback). Video effects in the inspector have a bypass switch like audio effects.
+
+Pixel effects accept project-sized frames up to 32 Mpx, with a 200 ms preview backstop and
+the existing export budget. The host bounds guest metadata to 64 effects, 32 parameters
+and 256-byte display strings.

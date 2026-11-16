@@ -1,13 +1,12 @@
 #!/usr/bin/env node
-// Adapts the reference pages of the 2.0 docs from the main AniMathIO repository (branch `v2`,
-// later `main`) into docs/. The generated pages are committed, so `npm run build` never needs
+// Adapts the reference pages of the AniMathIO 2 docs from the main AniMathIO repository (branch `main`) into docs/. The generated pages are committed, so `npm run build` never needs
 // the other checkout. Hand-written pages (getting started, install, editor tour, math objects,
 // captions and automation) are not touched.
 //
-//   node scripts/sync-v2-docs.mjs --source ../AniMathIO [--ref v2.0.0] [--images]
+//   node scripts/sync-v2-docs.mjs --source ../AniMathIO [--ref main] [--images]
 //
 // --source  a checkout of AniMathIO/AniMathIO at the commit to document
-// --ref     git ref used for links into the source repository (default v2.0.0)
+// --ref     git ref used for links into the source repository (default main)
 // --images  also crop and convert docs/screenshots/*.png to static/img/v2/*.webp (needs ImageMagick)
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
@@ -19,7 +18,7 @@ const opt = (name, fallback) => {
   return i >= 0 ? args[i + 1] : fallback;
 };
 const source = resolve(opt('--source', '../AniMathIO'));
-const ref = opt('--ref', 'v2.0.0');
+const ref = opt('--ref', 'main');
 const repoBlob = `https://github.com/AniMathIO/AniMathIO/blob/${ref}`;
 const out = resolve('docs');
 
