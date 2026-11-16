@@ -42,6 +42,8 @@ CI-built installers carry a build provenance attestation. To check a download:
 gh attestation verify <file> --repo AniMathIO/AniMathIO
 ```
 
+Each release also lists a `SHA256SUMS` file. Download it next to the installer and run `sha256sum --check --ignore-missing SHA256SUMS` (on macOS, `shasum -a 256 --check --ignore-missing SHA256SUMS`).
+
 ## Automatic subtitles need a model
 
 The installers include the local speech engine but no model. The first time you generate subtitles, AniMathIO

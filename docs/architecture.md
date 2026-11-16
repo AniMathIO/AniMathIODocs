@@ -149,8 +149,11 @@ rendering backends. Workflow
 dialogs use gpui-component forms; export works on an immutable snapshot, so selecting
 a delivery preset does not change the open project. `control::ExportPreset` is the
 shared table for editor, CLI and MCP. Preferences persist under the application
-config directory (`preferences.json`, renderer selection in `preview.json`) and
-never enter project serialization.
+config directory (`preferences.json`, renderer selection in `preview.json`), the
+main-window geometry (`window-state.json`, written atomically from a debounced
+save, with display UUID and display-local position; restored on that display or
+the primary if disconnected, clamped to its usable area; maximized sessions retain
+the initial restore size) and never enter project serialization.
 
 The `actions` module registers GPUI actions and a contextual keymap (`Editor`,
 `Timeline`, `Viewer`, `Inspector`, `MediaPool`). `secondary-` bindings are resolved
@@ -434,6 +437,14 @@ and evaluated `SceneClip::params` contain typed values; each `Animation` stores
 numbers. Validation rejects nonfinite values, mixed-type curves, and curves whose
 type differs from their typed base parameter. Plugin curves may also target an
 implicit schema default without a stored base value.
+
+Every native clip source and every non-null typed asset reference in clip parameters
+or keyframes must exist in the project asset manifest, including keys outside the
+trimmed clip range. `RemoveAsset` and batches that leave dangling references fail
+transactionally; JSON and archive writers apply the same model validation. Effect
+parameters (video and audio) are numeric only, and typed values have no nested
+containers. Save helpers omit cached bytes absent from the manifest while keeping
+the caller's cache available for undo.
 
 Numbers, points, and colours support linear, smoothstep ease-in/out, and hold
 interpolation. Colour RGB channels interpolate in linear light (not sRGB byte
@@ -863,3 +874,9 @@ scale and bounds its scrolling form to leave the preview and action buttons visi
 ## Scene cuts
 
 `scene_detector` shares the sampled luminance detector with reframe, preserving its default thresholds. `scenes` decodes source frames through the media backend at 4 Hz, maps cuts to the project frame grid and stores a snapshot-bound review draft. The editor `scenes` module runs analysis on a cancellable worker. Application validates the snapshot, simulates linked splits on a scratch project and returns one nested batch. No format change.
+
+Evaluated scenes carry the project’s straight-alpha sRGB background. Both render
+backends paint it before clips; preview, PNG rendering and video export share this
+policy. New default projects remain transparent; templates retain their configured
+backgrounds. Math input nesting is limited to 64 levels and native typesetting
+workers use an explicit 64 MiB stack.

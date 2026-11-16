@@ -14,10 +14,10 @@ AniMathIO 2.0 exports a 60-second 1080p video in **37 seconds instead of 117**, 
 | Open a project | 1.08 s | **0.21 s** |
 | Start to a usable window | 0.81 s | **0.20 s** |
 | Memory, idle with a project open | 923 MiB | **487 MiB** |
-| Peak memory while exporting* | 1252 MiB | **128 MiB** |
-| Installed size | 658 MiB | **293 MiB** |
+| Peak memory, 10 s export (1) | 1252 MiB | **128 MiB** |
+| Size on disk (2) | 658 MiB | **293 MiB** |
 
-Measured on one Linux machine (Ryzen 7 5800X) under a virtual X display, medians of three runs. *Export memory compares the 1.x app exporting from its window with the 2.0 command-line exporter. The method, raw numbers and caveats are in [benchmarks.md](https://github.com/AniMathIO/AniMathIO/blob/main/docs/benchmarks.md).
+Measured on one Linux machine (Ryzen 7 5800X) under a virtual X display, medians of three runs. (1) Export memory compares the 1.x app exporting from its window with the 2.0 command-line exporter. (2) The unpacked 1.x build against a 2.0 install. The method, raw numbers and caveats are in [benchmarks.md](https://github.com/AniMathIO/AniMathIO/blob/main/docs/benchmarks.md).
 
 The speed comes from the design: 2.0 is a native Rust app with one renderer shared by preview and export, and everything math-specific lives in sandboxed WebAssembly plugins.
 
