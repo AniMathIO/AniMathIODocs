@@ -37,7 +37,7 @@ The 1.x documentation is still online as [v1 (legacy)](/docs/v1/getting-started)
 
 ## Install
 
-Download the installer for your platform from the [2.0 release](https://github.com/AniMathIO/AniMathIO/releases/tag/v2.0.0)
+Download the installer for your platform from the [latest release](https://github.com/AniMathIO/AniMathIO/releases/latest)
 and follow the [install page](./install). Each installer ships the editor (`animathio`), the command line tool
 (`animathio-cli`) and the first-party plugins.
 
