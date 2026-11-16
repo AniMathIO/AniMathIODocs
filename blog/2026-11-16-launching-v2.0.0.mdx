@@ -1,0 +1,66 @@
+---
+title: Announcing AniMathIO 2.0
+slug: launching-v2.0.0
+tags: [release, v2.0.0, rust, plugins, migration]
+authors: MemerGamer
+---
+
+AniMathIO 2.0 exports a 60-second 1080p video in **37 seconds instead of 117**, opens projects **five times faster** and uses **half the memory** of 1.x.
+
+| | 1.8.3 (Electron) | 2.0 (Rust) |
+| --- | ---: | ---: |
+| Export, 60 s 1080p30 MP4 | 116.8 s | **37.4 s** (3.1× faster) |
+| Export, 10 s 1080p30 MP4 | 20.4 s | **6.5 s** |
+| Open a project | 1.08 s | **0.21 s** |
+| Start to a usable window | 0.81 s | **0.20 s** |
+| Memory, idle with a project open | 923 MiB | **487 MiB** |
+| Peak memory while exporting* | 1252 MiB | **128 MiB** |
+| Installed size | 658 MiB | **293 MiB** |
+
+Measured on one Linux machine (Ryzen 7 5800X) under a virtual X display, medians of three runs. *Export memory compares the 1.x app exporting from its window with the 2.0 command-line exporter. The method, raw numbers and caveats are in [benchmarks.md](https://github.com/AniMathIO/AniMathIO/blob/main/docs/benchmarks.md).
+
+The speed comes from the design: 2.0 is a native Rust app with one renderer shared by preview and export, and everything math-specific lives in sandboxed WebAssembly plugins.
+
+<!-- truncate -->
+
+## What 2.0 is
+
+- **A simple video editor at the core:** media clips, a multi-track timeline, transforms and keyframes, audio, preview and export.
+- **Plugins for everything else:** text, LaTeX, graphs, shapes, effects, animation presets, audio effects, the Manim importer and the v1 importer are WebAssembly components that run in a sandbox with memory, time and file limits.
+- **One render function:** preview, export and tests share the same deterministic renderer, so an exported frame matches what you saw.
+- **Every edit is a command:** each change is a serializable, invertible command. Undo and redo, the command line, the local control protocol and the MCP server all go through it.
+- **Installers for Windows, macOS and Linux:** see the [install page](/docs/install).
+
+## Why the rewrite
+
+Most of the bugs we kept fighting in 1.x came from how it was built, so fixing them one at a time would never make them stop. Preview and export were two different pipelines (canvas and HTML media for preview, a real-time `captureStream` recording for export), which is why audio could drift and export ran at a fixed 30 fps in real time. Positions were stored in absolute pixels, so elements moved when the canvas was resized. Every media file was embedded as base64 inside one JSON file, which made projects huge and slow to save. There was no command layer, so there was no undo. And Electron, Next.js and native Node modules made installs and builds fragile.
+
+2.0 removes those causes rather than the symptoms: one pure render function used by preview, export and tests; resolution-independent coordinates; a zip project with content-addressed assets; every edit as an invertible command, so undo and redo come for free; and a single Rust binary with plugins behind a versioned, sandboxed API. Rust was not the reason for the rewrite, but it makes this architecture easy to enforce.
+
+## Highlights
+
+- Math objects as clips: LaTeX with a live preview and a Write-on reveal, plots, vectors, polygons and grids. See [math objects](/docs/math-objects).
+- Local automatic subtitles with styled and word-highlight captions, SRT and WebVTT import and export, plus silence and scene-cut detection, auto reframe, beat markers and auto ducking. See [captions and automation](/docs/captions-and-automation).
+- A Premiere-style keymap. See [keyboard shortcuts](/docs/keyboard-shortcuts).
+- `animathio-cli` for headless rendering and the same tools through [MCP](/docs/mcp).
+- A documented [plugin API](/docs/plugins).
+
+## Showcase
+
+Three short explainers made entirely in 2.0, with LaTeX, graphs, shapes and music, built through the command line and MCP:
+
+<video controls preload="metadata" playsInline width="100%" src="https://animathio.com/videos/showcase/pythagorean-16x9.mp4"></video>
+
+<video controls preload="metadata" playsInline width="100%" src="https://animathio.com/videos/showcase/fourier-16x9.mp4"></video>
+
+<video controls preload="metadata" playsInline width="100%" src="https://animathio.com/videos/showcase/unit-circle-16x9.mp4"></video>
+
+Vertical 9:16 versions are on the [website](https://animathio.com).
+
+## Migrating from 1.x
+
+Import a 1.x project with `animathio-cli import-v1 project.animathio -o imported.amio`, or through the Manim importer for Manim scenes. The import is one-way and has known gaps, for example graphs arrive as images. Read [migrating from 1.x](/docs/migrating-from-v1) before moving a project, and keep your originals. The 1.x documentation stays available under [v1 (legacy)](/docs/v1/getting-started), and the 1.x changelogs are linked from the earlier release posts.
+
+## Get it
+
+Download 2.0.0 from the [GitHub release](https://github.com/AniMathIO/AniMathIO/releases/tag/v2.0.0). The Windows and macOS installers are unsigned for now; the install page explains the warnings you will see.
