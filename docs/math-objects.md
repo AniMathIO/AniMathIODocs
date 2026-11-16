@@ -7,7 +7,7 @@ description: "Add and edit LaTeX, plots, vectors, polygons, grids and other math
 
 # Math objects
 
-Equations and graphs are clips, not pictures. The Library's **Math** tab offers eleven objects:
+Equations and graphs are clips, not pictures. The Library's **Elements** tab offers eleven objects:
 
 | Object | Notes |
 | --- | --- |
@@ -46,8 +46,12 @@ it stays sharp at any size. Counters in glyphs such as θ render as holes. Inval
 message, disables Add and Apply, and never produces an error card.
 
 **Write on** replaces the reveal with a typewriter-style entrance from the animation plugin, over a duration
-you choose, in one undo step. The Plugins tab also has a **Write on** action for an existing LaTeX clip.
+you choose, in one undo step. The Effects tab also has a **Write on** action for an existing LaTeX clip.
 Equations dissolve into each other; symbol-level morphing is not available yet.
+
+Inline colours are supported: `\color{red}{x}`, `\textcolor{blue}{y}` and scoped
+`{\color{green} z}` keep their explicit colours, while unstyled glyphs inherit the clip colour.
+Write on also works with coloured formulas.
 
 ## Plots
 
