@@ -62,6 +62,6 @@ We're committed to pushing mathematical animation forward:
 
 We're grateful for the amazing community support, especially to contributors like zxp19821005 who help make AniMathIO accessible across different platforms. Your feedback and involvement drive our development forward.
 
-For the complete list of changes, visit our [full changelog](https://github.com/AniMathIO/AniMathIO/blob/main/CHANGELOG.md).
+For the complete list of changes, visit our [full changelog](https://github.com/AniMathIO/AniMathIO/blob/animathio-v1.6.3/CHANGELOG.md).
 
 Happy animating! 🎨✨

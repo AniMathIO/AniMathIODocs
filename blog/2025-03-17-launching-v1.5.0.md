@@ -54,4 +54,4 @@ We're continuously working to improve AniMathIO based on community feedback. Our
 
 Thank you for being part of the AniMathIO community! We can't wait to see the amazing mathematical animations you create with these new tools.
 
-For a complete list of changes, check out our [full changelog](https://github.com/AniMathIO/AniMathIO/blob/main/CHANGELOG.md).
+For a complete list of changes, check out our [full changelog](https://github.com/AniMathIO/AniMathIO/blob/v1.5.0/CHANGELOG.md).

@@ -23,6 +23,9 @@ const config: Config = {
   onBrokenLinks: "throw",
 
   markdown: {
+    // The 2.0 reference pages are plain CommonMark adapted from the main repository: they contain
+    // HTML comments and angle brackets that MDX would reject.
+    format: "detect",
     hooks: {
       onBrokenMarkdownLinks: "warn",
     },
@@ -36,12 +39,39 @@ const config: Config = {
     locales: ["en"],
   },
 
+  plugins: [
+    [
+      // Keep the pre-2.0 URLs (the 1.x docs lived directly under /docs) working on any static host.
+      "@docusaurus/plugin-client-redirects",
+      {
+        createRedirects(existingPath: string) {
+          if (!existingPath.startsWith("/docs/v1/")) return undefined;
+          return [existingPath.replace("/docs/v1/", "/docs/")];
+        },
+        redirects: [
+          { from: "/docs/tutorial-basics", to: "/docs/v1/category/tutorial-basics" },
+          { from: "/docs/tutorial-advanced", to: "/docs/v1/category/tutorial-advanced-features" },
+        ],
+      },
+    ],
+  ],
+
   presets: [
     [
       "classic",
       {
         docs: {
           sidebarPath: "./sidebars.ts",
+          // 2.0 is the default docs version at /docs; the 1.x docs are a frozen version at /docs/v1.
+          lastVersion: "current",
+          versions: {
+            current: { label: "2.0", path: "/", banner: "none" },
+            "1.x": {
+              label: "1.x (legacy)",
+              path: "v1",
+              banner: "unmaintained",
+            },
+          },
         },
         blog: {
           showReadingTime: true,
@@ -66,17 +96,18 @@ const config: Config = {
     navbar: {
       title: "AniMathIO",
       logo: {
-        alt: "My Site Logo",
+        alt: "AniMathIO logo",
         src: "img/AniMathIO.png",
       },
       items: [
         {
           type: "docSidebar",
-          sidebarId: "tutorialSidebar",
+          sidebarId: "v2Sidebar",
           position: "left",
-          label: "Getting Started",
+          label: "Docs",
         },
         { to: "/blog", label: "Blog", position: "left" },
+        { type: "docsVersionDropdown", position: "right" },
         {
           href: "https://github.com/AniMathIO/AniMathIO",
           label: "GitHub",
@@ -91,8 +122,12 @@ const config: Config = {
           title: "Docs",
           items: [
             {
-              label: "Getting Started",
-              to: "/docs/getting-started",
+              label: "AniMathIO 2.0",
+              to: "/docs",
+            },
+            {
+              label: "v1 (legacy)",
+              to: "/docs/v1/getting-started",
             },
           ],
         },
@@ -121,9 +156,15 @@ const config: Config = {
       ],
       copyright: `Copyright © ${new Date().getFullYear()} AniMathIO. Built with Docusaurus.`,
     },
+    colorMode: {
+      // The 2.0 editor is dark; the site follows it by default and keeps the toggle.
+      defaultMode: "dark",
+      respectPrefersColorScheme: true,
+    },
     prism: {
       theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      darkTheme: prismThemes.vsDark,
+      additionalLanguages: ["bash", "rust", "toml", "json"],
     },
   } satisfies Preset.ThemeConfig,
 };

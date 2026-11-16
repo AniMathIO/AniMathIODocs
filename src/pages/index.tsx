@@ -20,8 +20,8 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/getting-started">
-            Getting Started with AniMathIO - 5min ⏱️
+            to="/docs">
+            Get started with AniMathIO 2.0
           </Link>
         </div>
       </div>

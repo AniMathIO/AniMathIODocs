@@ -20,7 +20,7 @@ It supports a practical subset of Manim — `Text`, `Tex`, `MathTex`, `Circle`, 
 
 This is a translation, not an emulation: AniMathIO doesn't run Python, so there's nothing extra to install.
 
-See [Importing Manim Scenes](/docs/tutorial-advanced/importing-manim-scenes) for the full guide.
+See [Importing Manim Scenes](/docs/v1/tutorial-advanced/importing-manim-scenes) for the full guide.
 
 ### A New Canvas Engine
 
@@ -73,6 +73,6 @@ Shortly after v1.7.0 we published **v1.7.1**, which restores the Flatpak build. 
 
 Thank you to everyone who reported issues and stuck with us through this one — the known-issues list that this release finally clears had been open a long time.
 
-For the complete list of changes, see the [full changelog](https://github.com/AniMathIO/AniMathIO/blob/main/CHANGELOG.md).
+For the complete list of changes, see the [full changelog](https://github.com/AniMathIO/AniMathIO/blob/animathio-v1.7.0/CHANGELOG.md).
 
 Happy animating! 🎨✨
