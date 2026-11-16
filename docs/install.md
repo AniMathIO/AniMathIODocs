@@ -2,10 +2,10 @@
 title: Install
 sidebar_label: Install
 sidebar_position: 2
-description: "Installers for AniMathIO 2.0 on Windows, macOS and Linux, and how to verify them."
+description: "Installers for AniMathIO 2 on Windows, macOS and Linux, and how to verify them."
 ---
 
-# Install AniMathIO 2.0
+# Install AniMathIO 2
 
 Download the installer from the [latest release page](https://github.com/AniMathIO/AniMathIO/releases/latest) (currently 2.1.0).
 Every installer ships the desktop editor (`animathio`), the headless tool (`animathio-cli`) and the first-party
@@ -66,7 +66,7 @@ Debug binaries find `target/plugins` on their own.
 
 ## Coming from 1.x
 
-2.0 uses a different project format (`.amio`). Convert a 1.x project with
+AniMathIO 2 uses a different project format (`.amio`). Convert a 1.x project with
 `animathio-cli import-v1 project.animathio -o imported.amio`, or use **Import v1** on the start screen. See
 [Migrating from 1.x](./migrating-from-v1). The 1.x installers and documentation remain available as
 [v1 (legacy)](/docs/v1/getting-started).

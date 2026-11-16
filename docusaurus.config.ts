@@ -23,7 +23,7 @@ const config: Config = {
   onBrokenLinks: "throw",
 
   markdown: {
-    // The 2.0 reference pages are plain CommonMark adapted from the main repository: they contain
+    // The AniMathIO 2 reference pages are plain CommonMark adapted from the main repository: they contain
     // HTML comments and angle brackets that MDX would reject.
     format: "detect",
     hooks: {
@@ -62,10 +62,10 @@ const config: Config = {
       {
         docs: {
           sidebarPath: "./sidebars.ts",
-          // 2.0 is the default docs version at /docs; the 1.x docs are a frozen version at /docs/v1.
+          // AniMathIO 2 is the default docs version at /docs; the 1.x docs are a frozen version at /docs/v1.
           lastVersion: "current",
           versions: {
-            current: { label: "2.0", path: "/", banner: "none" },
+            current: { label: "2.x (current)", path: "/", banner: "none" },
             "1.x": {
               label: "1.x (legacy)",
               path: "v1",
@@ -122,7 +122,7 @@ const config: Config = {
           title: "Docs",
           items: [
             {
-              label: "AniMathIO 2.0",
+              label: "AniMathIO 2",
               to: "/docs",
             },
             {
@@ -157,7 +157,7 @@ const config: Config = {
       copyright: `Copyright © ${new Date().getFullYear()} AniMathIO. Built with Docusaurus.`,
     },
     colorMode: {
-      // The 2.0 editor is dark; the site follows it by default and keeps the toggle.
+      // The AniMathIO 2 editor is dark; the site follows it by default and keeps the toggle.
       defaultMode: "dark",
       respectPrefersColorScheme: true,
     },

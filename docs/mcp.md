@@ -9,7 +9,7 @@ description: "The local control socket and the MCP tool surface."
 
 # Control protocol and MCP
 
-AniMathIO 2.0 exposes two related surfaces:
+AniMathIO 2 exposes two related surfaces:
 
 1. **The control protocol** — a local, authenticated JSON-RPC 2.0 socket that is
    the single API for the editor UI, the CLI, plugins and the MCP sidecar.
@@ -46,8 +46,46 @@ Newline-delimited JSON-RPC 2.0. `method` + `params` form a tagged enum
 ```
 
 Requests are capped at 16 MiB; responses at 64 MiB (renders can be several
-megabytes). A request without the token, or with a mismatched `jsonrpc` version,
-gets a JSON-RPC error instead of a result.
+megabytes). A client may pipeline requests: several newline-delimited requests
+sent in one write are each answered in order. Each connection executes one
+request at a time: a slow request (including a deferred job once accepted)
+blocks later pipelined requests on that connection until its reply is sent.
+A request without the token, or with a mismatched `jsonrpc` version, gets a JSON-RPC error instead of a result.
+
+### Editor acceptance and completion
+
+The editor must accept each request within **10 seconds** of queueing it. If its UI
+thread is busy beyond that deadline, the server returns JSON-RPC error **-32003**
+(request not accepted). The queued request is atomically expired before any editor
+side effects and cannot execute when the UI recovers. Retrying this error is safe.
+The pending bridge queue is bounded to eight requests. A full queue returns the
+same error immediately without queueing the request, so retries cannot accumulate
+unlimited expired work while the UI is wedged. Acceptance is an internal handshake,
+with no new wire message or client requirement.
+
+After acceptance there is **no completion timeout**. Export, subtitle transcription,
+reframe, autocut, scene detection and other jobs retain their existing result shapes
+and reply when done or cancelled, even after tens of minutes or hours. Other control
+connections can submit requests while an accepted job runs; a single connection
+still processes calls sequentially. A computation that stalls after acceptance must
+finish or be cancelled through its existing job controls; the acceptance deadline
+is not a job watchdog. Headless project-file MCP execution has no UI acceptance step.
+
+Closing a connection does not cancel work. A request already queued may still be
+accepted and applied if the editor reaches it before its deadline, and an accepted job
+keeps running to completion; its connection thread stays occupied (one of the eight
+client slots) until the job finishes and its reply is discarded. Cancel long jobs
+through their own controls, not by disconnecting. One `animathio-cli mcp` process uses a
+single connection and serialises its tool calls behind a running job. When the queue is
+full the error comes back at once, so clients retrying -32003 should back off.
+
+A closed editor bridge or dropped reply channel returns **-32004** immediately when
+detected. Its outcome may be unknown: an accepted edit might already have happened.
+Do not automatically retry mutations after this error or a transport disconnect.
+Window shutdown may close the socket instead of delivering an error. The existing
+**-32000** generic handler, **-32001** authentication and **-32002** unsupported errors
+remain unchanged. These errors use the existing JSON-RPC error envelope and are
+surfaced by `animathio-cli mcp` without protocol changes.
 
 ### Methods
 
@@ -104,7 +142,10 @@ canonicalized and must resolve to regular files; `script_dir` must resolve to a
 directory. Output paths may name parents that do not exist yet — the export
 writer creates them — but their nearest existing ancestor must be a directory.
 `export` refuses an existing destination with an `output already exists` error
-unless `overwrite` is `true`, and writes the MP4 through a temporary file in the
+unless `overwrite` is `true`, and refuses an output that names the open project
+file with `invalid path: the output path is the open project file; choose a
+different file name` (both handlers: the connected editor and the headless
+`--project` mode), and writes the MP4 through a temporary file in the
 destination directory that is renamed into place only on success, so a cancelled
 or failed export never leaves a partial file. Control math/graph positions are
 normalized canvas fractions and their colors are `[r, g, b, a]` bytes. Durations
@@ -136,12 +177,12 @@ clears its undo history.
 | Tool | Description | Notes |
 | --- | --- | --- |
 | `get_project_state` | Canvas, tracks, clips, playhead, active state | |
-| `add_text` | Add a plain-text clip | font size in pixels; ms times |
+| `add_text` | Add a plain-text clip | font size in pixels; ms times; the clip and its track are one undo step |
 | `add_math` | Add an `org.animathio.latex` plugin clip | `latex`; optional `mode` (`latex`/`typst`), `size` (default 48 px), `color`, `x`/`y`, `start_ms`, `duration_ms`, `reveal_duration_ms`; the clip, its new track and any reveal keyframes are one undo step |
 | `add_math_object` | Add any typed object from the Math panel, including shape objects and grids, as one free-layer batch | `kind`: `latex`, `text`, `point`, `line`, `vector`, `polygon`, `plot`, `circle`, `ellipse`, `cartesian`, `polar`; optional `fields` (string values in math units), `color`, `start_ms`, `duration_ms` (default 5000); uses panel defaults for omitted fields. LaTeX/Text: `source`, `size` (% short edge); Point/Circle: `x`, `y`, `radius`; Ellipse: `x`, `y`, `rx`, `ry`; Line/Vector: `x1`, `y1`, `x2`, `y2`; Polygon: `vertices` (`x,y; x,y; ...`); Plot: `expression`, `min`, `max`; grids: `extent`. Use `apply_animation_preset` for Write animation. |
 | `add_graph` | Add an `org.animathio.graph` plugin clip | bounds (always fully visible; the plane is scaled uniformly so circles stay round on any canvas aspect), newline-separated `items`, `show_grid`/`show_axes`/`show_labels`, `color`, `x`/`y`, `start_ms`, `duration_ms`, `draw_duration_ms` |
 | `add_media` | Import image/video/audio by absolute path, add a clip (one undo step); audio starts with animatable gain/mute defaults | |
-| `add_animation` | Attach an animation | `fadeIn`, `fadeOut`, `slideIn`, `slideOut`; optional `direction` |
+| `add_animation` | Attach an animation | `fadeIn`, `fadeOut`, `slideIn`, `slideOut`; optional `direction`; in animations occupy the start of the clip, out animations its end; durations longer than the clip are clamped (`clamped_to_clip` in the result) |
 | `set_clip_speed` | Set exact rational speed, reverse and linear ramps in one undo step | `clip_id`, `numerator`, `denominator`, `reverse?`, `ramps?: [{time, numerator, denominator}]`, `ripple?`; ramp times are local ticks; linked audio follows with pitch shift |
 | `freeze_frame` | Insert a frame hold segment and ripple unlocked trailing clips | `clip_id`, `at` (absolute ticks), `frames` (positive project frames); linked audio holds are silent; one undo step |
 | `update_element` | Update placement, visible time frame or image/video fit | |
@@ -160,7 +201,7 @@ clears its undo history.
 | `set_playing` | Start / pause playback | |
 | `save_project` | Save to a path, or overwrite the current file | |
 | `render_frame` | Render one frame to PNG | base64 return, or written to a path |
-| `export_video` | Export an offline H.264 + AAC MP4 | `format` defaults to `mp4` and is the only supported value; creates missing parent directories; requires `overwrite: true` to replace an existing file; returns the written path |
+| `export_video` | Export an offline H.264 + AAC MP4 | `format` defaults to `mp4` and is the only supported value; creates missing parent directories; requires `overwrite: true` to replace an existing file; refuses an output that is the open project file; returns the written path |
 | `import_v1` | Import a v1 `.animathio` project, replacing the current one | |
 | `add_transition` | Add a transition on the cut between two adjacent clips | `kind`: `cross_dissolve` (default), `dip_to_black`, `dip_to_white`, `wipe` (+ `direction`: `left_to_right`/`right_to_left`/`top_to_bottom`/`bottom_to_top`); edit point by `between_clip_a` + `clip_b`, or by the nearest cut to `at_time_ms` (optionally on `track`); `duration_ms` is centred on the cut |
 | `list_transitions` | List transitions | id, track, clips, kind, `cut_ms`, `duration_ms` |
@@ -578,3 +619,8 @@ Denoise learning uses a noise-only interval inside an audio clip (32 ms to 30 s)
 `detect_scenes` takes `clip` or `track`, optional `sensitivity` (0..1, default 0.5) and `min_shot_frames` (default 6). It returns a proposal containing the expected project snapshot and cuts with `enabled` toggles, timeline ticks and base64-encoded 96×54 grayscale thumbnails. Pass the reviewed object as `proposal` to `split_at_scenes`; `markers: true` adds markers instead. Editor detection runs on a worker. Control methods are `video.detect_scenes` and `video.split_at_scenes`. Reanalysis is required after any project change.
 
 Sampling is 4 Hz: very short scenes can be missed and detected boundaries have up to one sample of latency. Slow fades and gradual motion are ignored. The editor offers sensitivity and minimum-shot presets, track-wide reanalysis, and short-shot deletion presets. `delete_shorter_than_frames` removes short resulting shots and linked companions, leaving timeline gaps.
+
+Export and PNG output guards compare filesystem identity, including hard links and
+symlinks, and resolve missing path tails. Case handling follows the volume rather
+than the operating system. Concurrent filesystem changes after validation (TOCTOU)
+remain outside this guard. PNG outputs also refuse the open project path.
