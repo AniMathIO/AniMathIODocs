@@ -16,13 +16,14 @@ menus (File, Edit, View, Playback, Tools, Clip, Help), the project name, an MCP 
 
 ## Library
 
-Four tabs share the Library panel:
+Five tabs share the Library panel:
 
-- **Assets**: imported media as a grid or list, with search, kind filters, durations, resolutions, audio
+- **Media**: imported media as a grid or list, with search, kind filters, durations, resolutions, audio
   waveforms and hover scrubbing of video posters. Click a card to add it at the playhead or drag it onto a
   track. Ctrl+I imports without inserting.
-- **Plugins** and **Math**: text, shapes, LaTeX and graphs. See [Math objects](./math-objects).
-- **Effects**: video and audio effects and animation presets.
+- **Elements**: text, shapes, LaTeX, graphs and third-party clip sources. See [Math objects](./math-objects).
+- **Effects**: video and audio effects, transitions, animation presets and **Write on**.
+- **Plugins**: installed-plugin inventory, versions and load status. See [Community plugins](./community-plugins).
 - **Titles**: eight animated compositions (centered title, title and subtitle, lower third, caption bar,
   chapter card, end card, kinetic word pop, math title). Double-click to add five seconds at the playhead.
 

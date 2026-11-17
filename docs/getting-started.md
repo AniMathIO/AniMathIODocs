@@ -46,7 +46,7 @@ and follow the [install page](./install). Each installer ships the editor (`anim
 1. **Start.** Launch AniMathIO. The start screen offers canvas presets (1080p, 4K, 9:16, square, 4:5),
    templates, recent projects, and Open, Import v1 and Import Manim.
 2. **Add media.** Drop files on the Library, or press Ctrl+I. A video with sound adds a linked audio clip.
-3. **Add a math object.** Open the **Math** tab in the Library, pick LaTeX, Plot, Vector and so on, edit it in
+3. **Add a math object.** Open the **Elements** tab in the Library, pick LaTeX, Plot, Vector and so on, edit it in
    the dialog and press Add. See [Math objects](./math-objects).
 4. **Edit.** Cut with the blade (C) or Ctrl+K, trim, move, and animate with keyframes or the animation
    presets in the inspector. The default shortcuts follow Premiere Pro; see
@@ -70,4 +70,5 @@ The [CLI reference](./cli) lists every subcommand.
 
 - [The editor](./editor): panels, timeline, viewer, inspector and export.
 - [Math objects](./math-objects) and [Captions and automation](./captions-and-automation).
+- [Community plugins](./community-plugins): install and manage third-party extensions.
 - [Plugin authoring](./plugins), [CLI](./cli) and [MCP](./mcp) if you want to extend or script AniMathIO.
