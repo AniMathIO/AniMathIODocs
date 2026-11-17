@@ -25,12 +25,118 @@ validates and replays. A plugin never
 touches files, sockets, the GPU or a font engine directly. Everything it needs is
 provided by **host imports**.
 
+The editor's Library → Plugins tab lists every loaded plugin kind, version, id,
+first-party or third-party origin, enabled status and source bundle file (full path on hover). Clip-source creation cards live in
+Elements (third-party sources under Plugins); title presets live in Titles and
+effects/animations in Effects. Community plugins can be installed and enabled live. The inventory also shows package load failures.
+## Installing community plugins
+
+Besides the first-party plugins that ship with AniMathIO, you can install third-party
+**community plugins** (`.amplugin` files). They are sandboxed exactly like first-party
+plugins (no network or file access, memory and time limits), but they are third-party code
+that AniMathIO does not audit, so they are **off by default** and every plugin has to be
+enabled explicitly.
+
+### Trust model
+
+1. **Global switch.** "Community plugins" (Preferences in the editor, or
+   `animathio-cli plugins community on|off`) is off by default. While it is off no community
+   component is loaded or executed; Installed can still display bundle metadata.
+2. **Per-plugin flag.** An installed plugin starts **disabled**. It loads only when the
+   switch is on *and* the plugin is enabled (`animathio-cli plugins enable <id>`).
+3. **No impersonation.** Community plugins cannot use the reserved `org.animathio.*` ids, so
+   they can never replace a first-party plugin, and they cannot reuse the id of another
+   installed community plugin (installing the same id again requires `--force`, an update).
+4. **Verified installs.** Installing from a URL needs `https://` and the package's expected
+   SHA-256; the hash is checked before anything is written. The package must then pass the
+   normal package reader, manifest validation and ABI check. The file is written atomically.
+   `ANIMATHIO_NO_UPDATE_CHECK=1` does not block an explicit install: it is a user action.
+
+The trust settings are one small JSON file, `community-plugins.json` (`enabled` switch and
+the enabled plugin ids), in the editor's configuration directory. The editor, the CLI and
+the control handler all read the same file. `ANIMATHIO_PLUGIN_SETTINGS` overrides its path.
+
+### Browse and install in the editor
+
+The Library's Plugins tab shares the global switch with Preferences and shows a one-time
+sandbox/trust explanation. Installed community plugins have an Enabled toggle and Remove;
+first-party plugins remain on and cannot be removed here. Browse appears only while the
+switch is on. Search by name, author, description or id; inspect the licence, version,
+minimum ABI, incompatibility reason and source link before installing. Installs start
+disabled, then Enable on the Browse card or in Installed loads them live. Updates are offered when the fetched version is
+newer, never installed automatically. Delisted installed plugins retain their files and
+show the registry's reason. Missing project plugins are named above the workspace, with
+Install when a compatible entry is in the fetched index.
+
+The editor fetches one [community index](https://raw.githubusercontent.com/AniMathIO/plugins/main/community-index.json)
+on an explicit Browse click. It uses a bounded ureq client with connection/overall timeouts,
+`AniMathIO/<version>` User-Agent and ETag conditional requests; no personal data is sent.
+No registry network request runs automatically, including while the switch is off.
+`ANIMATHIO_NO_UPDATE_CHECK=1` does not block an explicit Browse or Install action.
+Failures show Retry without blocking editing. Download size, SHA-256, package id, version,
+kinds and ABI must match the index before the store writes the package. Compatibility
+uses the host's manifest validator. Install from file uses the existing native dialog and
+the same store validation, without a registry hash for a local file.
+
+`ANIMATHIO_COMMUNITY_INDEX_FILE` overrides the fetched index with a local JSON file for
+offline development/screenshots. It is read only when Browse is clicked; downloads still
+use the indexed HTTPS release URLs. UI tests inject both transports and use the frozen
+hello package, so no network is needed.
+
+| Installed | Browse (local index fixture) |
+| --- | --- |
+| ![Installed plugins](https://github.com/AniMathIO/AniMathIO/blob/v2.2.0/docs/screenshots/editor-community-installed.png) | ![Community registry](https://github.com/AniMathIO/AniMathIO/blob/v2.2.0/docs/screenshots/editor-community-browse.png) |
+
+### Folders
+
+| OS | Community plugin folder | Settings file |
+| --- | --- | --- |
+| Linux | `~/.local/share/animathio/plugins` | `~/.config/animathio/community-plugins.json` |
+| macOS | `~/Library/Application Support/animathio/plugins` | `~/Library/Application Support/org.AniMathIO.AniMathIO/community-plugins.json` |
+| Windows | `%APPDATA%\animathio\plugins` | `%APPDATA%\AniMathIO\AniMathIO\config\community-plugins.json` |
+
+Community folder entries must be regular files; symlinks and special files are rejected.
+
+`ANIMATHIO_USER_PLUGIN_DIR` overrides the plugin folder (useful for tests and portable
+setups). `ANIMATHIO_PLUGIN_DIR` is unrelated: it is the developer override for *bundled*
+plugins and may use reserved ids.
+
+### From the command line
+
+```bash
+animathio-cli plugins install ./my-plugin.amplugin
+animathio-cli plugins install https://example.org/my-plugin.amplugin --sha256 <64 hex characters>
+animathio-cli plugins community on
+animathio-cli plugins enable com.example.my-plugin
+animathio-cli plugins list --json
+animathio-cli plugins disable com.example.my-plugin
+animathio-cli plugins remove com.example.my-plugin
+```
+
+`plugins list` shows each installed plugin and whether it is enabled; `plugins remove`
+deletes the file and the enabled flag. Renders and exports from the CLI (and the control
+handler) load the enabled community plugins like any other plugin.
+
+### In the editor: no restart
+
+The editor applies the switch live. Turning "Community plugins" on or off in Preferences
+(saving the dialog also re-reads the settings, so changes made with the CLI while the editor
+runs are picked up) loads or unloads plugins in place: `PluginHost::sync_community_plugins`
+registers newly enabled plugins and drops disabled ones (clip sources, effects, audio
+effects, animation presets and importers), the inspector's plugin list refreshes and the
+preview re-renders. Clips of an unloaded or missing plugin render as the usual
+missing-plugin placeholder (and fail an export) until the plugin is enabled again.
+Audio effects of an unloaded plugin are skipped with a warning during playback and fail an
+export.
+`plugins.list` / `list_plugins` (see `docs/mcp.md`) report what is installed and loaded;
+installing and enabling are deliberately not part of the control protocol.
+
 ## The WIT world
 
 The contract is `crates/plugin-api/wit/plugin.wit`:
 
 ```wit
-package animathio:plugin@1.1.0;
+package animathio:plugin@1.2.0;
 
 interface types { /* shared vector + schema types, see below */ }
 
@@ -86,6 +192,15 @@ world importer-plugin {
 }
 ```
 
+ABI 1.2 adds an opt-in source world:
+
+```wit
+world colored-source-plugin {
+    include source-plugin;
+    import math-colors;
+}
+```
+
 A clip-source component implements the two exports of `world source-plugin`.
 Effects implement their separate worlds; no unused stubs are required in 1.0.
 The legacy adapter retains the old source world's reserved vector-effect and
@@ -93,8 +208,11 @@ curve hooks, without making them part of the frozen 1.0 contract.
 
 ### API versions and compatibility policy
 
-The current contract is `animathio:plugin@1.1.0`: the frozen 1.0 contract plus two
-new worlds (`animation-preset-plugin`, `importer-plugin`) and one new interface that only
+The current contract is `animathio:plugin@1.2.0`. ABI 1.2 adds the separate
+`math-colors` interface and opt-in `colored-source-plugin` world; all 1.0/1.1
+records, functions and existing worlds retain their layouts and behavior.
+ABI 1.1 added two
+worlds (`animation-preset-plugin`, `importer-plugin`) and one new interface that only
 the importer world imports (`import-files`). 1.1 changes no existing record, enum,
 variant, function or world, so every 1.0 component loads and runs unchanged (the
 checked-in frozen `hello-1.0.0` fixture and the 0.2.x fixtures are tested against this
@@ -104,12 +222,12 @@ its workspace version; `API_VERSION` identifies the component ABI. Its
 host-side kind and error enums are non-exhaustive so SDK callers handle future
 host classifications/errors with a fallback. Package `api_version` is
 an exact stable semantic version naming the **minimum host ABI required**, not a
-Cargo-style range. This host supports `1.0.0` and `1.1.0` and explicitly adapts legacy
+Cargo-style range. This host supports `1.0.0`, `1.1.0` and `1.2.0` and explicitly adapts legacy
 `0.2.0`, `0.2.1`, `0.2.2`. It rejects malformed versions, prereleases, build
 metadata, unknown majors and requirements newer than its implemented ABI before
 compiling the component. Merely changing `plugin.toml` cannot upgrade a component.
 A 1.x component imports and exports interfaces at the minor its WIT came from; the
-host's linker satisfies `@1.0.0` imports with its `@1.1.0` definitions (Wasmtime
+host's linker satisfies `@1.0.0`/`@1.1.0` imports with its `@1.2.0` definitions (Wasmtime
 semver matching) and looks up exports at every implemented 1.x minor, newest first.
 The `animation-preset` and `importer` kinds require `api_version = "1.1.0"` and, like
 `effect`/`audio-effect`, must be a package's only kind.
@@ -163,7 +281,7 @@ generators need a separate future world; the source world returns vector scenes 
 ### Upgrading a 0.2 component
 
 Existing binaries can keep their original manifests and run through the adapter.
-To build a new 1.0 component:
+To rebuild a legacy component against the current ABI:
 
 1. Generate against the current WIT. Source plugins select `world: "source-plugin"`
    and remove the unused vector-effect/curve trait methods. Effect/audio world
@@ -173,8 +291,8 @@ To build a new 1.0 component:
    string code, a fallback message and empty metadata when no details are needed.
 3. Return string kind IDs from `describe`, including the real `audio-effect` kind,
    and initialize its `metadata` field (an empty list is fine).
-4. Set package `api_version = "1.1.0"` (or `"1.0.0"` for binaries built against the
-   frozen 1.0 WIT); keep the plugin's own version consistent
+4. Set package `api_version = "1.2.0"` (or `"1.0.0"`/`"1.1.0"` for binaries built against
+   those frozen WIT contracts); keep the plugin's own version consistent
    between package and `describe`. Preserve existing parameter IDs, units and
    enum values when retaining compatibility with saved projects.
 5. Rebuild for `wasm32-wasip2` and package the new binary with its matching manifest.
@@ -185,12 +303,21 @@ To build a new 1.0 component:
 | --- | --- | --- |
 | `shape-text` | `(text, font_size) -> result<list<path>, diagnostic>` | Text shaping with the host's embedded DejaVu Sans (never a system font, so layout is identical on every machine); returns glyph outline paths. Keeps plugins small (no bundled fonts). |
 | `typeset-math` | `(source, mode, font_size) -> result<typeset-result, diagnostic>` | Typeset LaTeX or Typst math via the host (Typst + MiTeX); returns outline paths plus a tight bbox. |
+| `typeset-math-colored` | `(source, mode, font_size) -> result<colored-typeset-result, diagnostic>` | ABI 1.2, `math-colors` interface in `colored-source-plugin` only: ordered glyph/rule outlines with optional solid RGBA paint and a tight bbox. |
 | `svg-to-paths` | `(svg_xml) -> result<list<path>, diagnostic>` | Parse an SVG XML string into vector paths. |
 | `log` | `(message)` | Host logging for diagnostics. |
 | `limits` | `() -> list<tuple<string, u64>>` | Configured sandbox policy and tick frequency; unique keys, unknown keys ignored. |
 | `read-sibling` | `(relative-path) -> result<list<u8>, diagnostic>` | Importer world only (`import-files` interface): bounded read of a file below the directory the caller granted for this import. |
 
-`typeset-result` is `{ paths: list<path>, bbox: bbox }`; each path contains a complete glyph or shape, including counter contours. Stroked math rules are returned as filled outlines. LaTeX rendering embeds the MiTeX 0.2.4 standard helpers offline, with STIX Two Math for both equations and upright text; cases insert a quad between columns. Inline LaTeX color commands are accepted, but the resulting paths use the latex clip’s single configured color. Write on reveals complete glyphs so counters remain open; `math-mode` is `latex` or
+`typeset-result` is `{ paths: list<path>, bbox: bbox }`; each path contains a complete glyph or shape, including counter contours. Stroked math rules are returned as filled outlines. LaTeX rendering embeds the MiTeX 0.2.4 standard helpers offline, with STIX Two Math for both equations and upright text; cases insert a quad between columns. The original import retains its geometry-only result. The ABI 1.2
+`colored-source-plugin` world includes the unchanged `source-plugin` world plus
+`math-colors`. Its `colored-typeset-result` contains `paths: list<colored-path>`
+and the same bbox; each `colored-path` has `outline: path` and `color: option<color>`.
+Explicit solid text/shape fills and rule strokes retain their RGBA paint, including
+black. Unstyled paths and gradients/tilings return no color and inherit the clip
+color. LaTeX uses the evaluated (including keyframed) clip color for inherited paths;
+its alpha multiplies explicit paint alpha, and the normal clip transform opacity
+still applies to the whole result. Write on reveals complete glyphs so counters remain open; `math-mode` is `latex` or
 `typst`; `bbox` is `{ min-x, min-y, max-x, max-y }` (f32).
 
 ### Vector types (`types`)
@@ -752,7 +879,7 @@ wit-bindgen = "0.40.0"
 **`plugins/examples/hello/plugin.toml`**
 
 ```toml
-api_version = "1.1.0"
+api_version = "1.2.0"
 id = "com.example.hello"
 name = "Hello"
 version = "1.0.0"
@@ -1004,10 +1131,11 @@ scale with it. Normalized shapes remain static unless their parameters are keyfr
 `[{"MoveTo":[0,0]},{"QuadTo":[[0.5,1],[1,0]]},"Close"]`.
 `CurveTo` carries three points (two controls and endpoint).
 
-All first-party components and the example are built against ABI 1.1.0 and declare
-`api_version = "1.1.0"`. Effects-basic, import-manim and the example are version
-1.0.0; text, shapes, animations and audio-basic are 1.1.0. LaTeX is 1.2.1
-(normalized sizing, strict validation and preserved glyph holes), and graph is
+All first-party components and the example are built against ABI 1.2.0 and declare
+`api_version = "1.2.0"`. LaTeX selects `colored-source-plugin`; other source
+plugins retain `source-plugin`. Effects-basic, import-manim and the example are version
+1.0.0; text, shapes, animations and audio-basic are 1.1.0. LaTeX is 1.3.0
+(per-path inline color, normalized sizing, strict validation and preserved glyph holes), and graph is
 1.3.0 (parametric curves, styling and explicit axis scaling). The frozen 1.0
 fixture and the explicit 0.2.x adapter retain older binaries; 0.1 packages are rejected.
 `plugins/examples/hello` demonstrates a canvas-coordinate scene. Install the WASI
@@ -1056,7 +1184,7 @@ endpoint follows the same curve. Sampling
 uses 256 base intervals with at most four subdivision levels; nonfinite
 evaluations or unresolved discontinuities break the path.
 This remains plugin data and needs no project schema change.
-The [showcase builders](https://github.com/AniMathIO/AniMathIO/blob/main/examples/showcase/README.md) exercise this with a unit
+The [showcase builders](https://github.com/AniMathIO/AniMathIO/blob/v2.2.0/examples/showcase/README.md) exercise this with a unit
 circle, independent function-chart axes and a subdued grid.
 
 Function plots are clipped to the graph viewport. Adaptive subdivision breaks

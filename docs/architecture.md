@@ -26,7 +26,7 @@ the render/audio/export data flow. The authority for these rules is
 | `transcribe` | Local automatic subtitles: whisper.cpp speech recognition behind the opt-in `whisper` cargo feature (whisper.cpp through the whisper-rs bindings; needs cmake, a C++ toolchain and libclang), on-demand SHA-256-verified model downloads with resumable atomic writes, 16 kHz mono audio preparation on top of `audio`, pure cue splitting (line/duration/overlap rules) and SRT/WebVTT reading and writing. Everything but the engine works without the feature. |
 | `control` | Local JSON-RPC 2.0 control protocol over a user-only socket/named pipe: methods (including `export`), token auth, headless handler and client. |
 | `plugin-api` | The WIT world (`crates/plugin-api/wit/plugin.wit`), the `plugin.toml` manifest format, `.amplugin` package (zip of `plugin.toml` + `plugin.wasm`), the inspector schema, guest SDK and first-party clip authoring helpers (`sources`). |
-| `plugin-host` | wasmtime Component Model runtime: loading/compiling plugins, the sandbox (fuel, epoch, memory, output caps), host imports (shape-text, svg-to-paths, typeset-math, limits, log, and `read-sibling` for importers), ABI 1.1.0 (1.0.0 components load unchanged) plus an explicit 0.2.x adapter, plugin scene resolution, pixel-effect plugins (`PluginHost::effects`, `effect_processor`: instance-pre cached components, a fresh fuel/memory/epoch-limited store per call, frame-size caps), animation presets (`PluginHost::animation_presets`, `animation_preset_command`) and importers (`PluginHost::importers`, `PluginHost::import`). |
+| `plugin-host` | wasmtime Component Model runtime: loading/compiling plugins, the sandbox (fuel, epoch, memory, output caps), host imports (shape-text, svg-to-paths, typeset-math, typeset-math-colored, limits, log, and `read-sibling` for importers), ABI 1.2.0 (1.0.0 and 1.1.0 components load unchanged; the opt-in `colored-source-plugin` world adds per-path math colours) plus an explicit 0.2.x adapter, plugin scene resolution, pixel-effect plugins (`PluginHost::effects`, `effect_processor`: instance-pre cached components, a fresh fuel/memory/epoch-limited store per call, frame-size caps), animation presets (`PluginHost::animation_presets`, `animation_preset_command`) and importers (`PluginHost::importers`, `PluginHost::import`), and the community plugin trust model (`CommunityStore`: per-user plugin folder, global switch + per-plugin enabled set in `community-plugins.json`, verified install/uninstall, and `PluginHost::sync_community_plugins` / `unload_plugin` for hot load and unload). |
 | `typeset` | Host-side math typesetting: Typst as a library plus MiTeX for LaTeX→Typst conversion, turned into vector path outlines plus a tight bbox. |
 | `import-v1` | One-way importer for v1 `.animathio` projects (deflated JSON + base64 media). Still native (see "Importers" below). |
 | `import-manim` | One-way importer for Manim Community scene scripts (`.py`), parsed with a small pure-Rust Python parser (`pyparse`) whose node vocabulary follows tree-sitter-python. The app runs it only inside the `org.animathio.import-manim` importer plugin. |
@@ -100,11 +100,16 @@ shared panel handlers, asserting project and view state without devices or pixel
 `apps/animathio/src/editor.rs` owns view state and composes implementation modules
 under `editor/`: `menus`, `workspace`, `viewer`, `transport`, `timeline_view`,
 `fields`, `audio_effects` (inspector audio-effect cards), `animations` (the inspector
-Animations section and the Effects-tab preset library), `video_effects` (inspector video-effect cards), `inspector_view`, `media_pool`, `math` (Math tab, typed object dialog and inspector), `titles` (Titles tab), `dialogs`, `export_panel`
+Animations section and the Effects-tab preset library), `video_effects` (inspector video-effect cards), `inspector_view`, `media_pool`, `math` (Elements cards, typed object dialog and inspector), `titles` (Titles tab), `dialogs`, `export_panel`
 (export queue popover), `start_screen`, `templates`, `clip_ops`, `commands`, `project_io`,
 `control_bridge`, `playback_glue`, `timeline_thumbnails`, `actions` and `update_check`
 (at most one GitHub releases lookup per 24 h, a dismissable newer-release notice,
-opt-out in Preferences or with `ANIMATHIO_NO_UPDATE_CHECK=1`, silent on failure).
+opt-out in Preferences or with `ANIMATHIO_NO_UPDATE_CHECK=1`, silent on failure) and
+`community_plugins` (Installed/Browse UI, injected bounded registry transport in
+`apps/animathio/src/editor/community_plugins/registry.rs`, verified background installs,
+and the shared Preferences "Community plugins" switch: re-reads the trust
+settings and calls `PluginHost::sync_community_plugins`, then refreshes the plugin list and
+re-renders, so plugins load and unload without a restart).
 Shared drawing/resource helpers live in
 `support`; `color_edit` owns the live-preview transaction (colour pickers, sliders,
 number scrubbing and the viewer's transform gizmo all preview through it, so one
@@ -852,7 +857,7 @@ route through the shared commands and source-limit guards.
 
 ## Mathematical object workflow
 
-The library's **Math** tab offers LaTeX, Text, Point, Line segment, Vector,
+The library's **Elements** tab offers LaTeX, Text, Point, Line segment, Vector,
 Polygon, Plot, Circle, Ellipse, Cartesian grid and Polar grid. Click a preview
 card to configure it; the plus button adds defaults at the playhead, and dragging
 its preview to the timeline adds defaults at the drop time. Placement uses a
@@ -880,7 +885,7 @@ preset. Plugin errors appear inline and disable Add/Apply.
 The cards and fields follow the interface text scale; the dialog widens with UI
 scale and bounds its scrolling form to leave the preview and action buttons visible.
 
-![Math library](/img/v2/editor-math-panel.webp)
+![Elements library](/img/v2/editor-math-panel.webp)
 ![Math object dialog](/img/v2/editor-math-dialog.webp)
 
 ## Scene cuts
