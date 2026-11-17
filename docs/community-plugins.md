@@ -25,7 +25,6 @@ IDs are reserved for first-party plugins, so community bundles cannot replace th
 
 ## Install and enable
 
-<!-- Part C: remove the following paragraph if the Browse UI slips. -->
 In **Library → Plugins**, use **Browse** to search the registry, inspect a plugin's source and compatibility, install it, then enable it under **Installed**; **Install from file** accepts a local `.amplugin` bundle, and the same view lets you disable or remove installed plugins.
 
 The CLI works independently of Browse. Download an `.amplugin` from an author you trust, then install
