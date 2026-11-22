@@ -33,7 +33,7 @@ Commands:
   new             Create a project from a bundled template
   render          Render one frame to PNG
   render-seq      Render [from, to) frame indices to `frame_000000.png`, etc
-  export          Export an offline H.264 + AAC MP4
+  export          Export an offline video: H.264 + AAC MP4 or VP9 + Opus `WebM`
   validate        Check model invariants and all asset content hashes
   import-media    Import media into a new project, including linked companion audio
   media-fit       Set one image/video clip's fit and save an edited project archive
@@ -136,12 +136,18 @@ animathio-cli render-seq sample.amio --from 30 --to 31 --width 1920 --height 108
 
 > Export fails (non-zero exit, no output file) when a plugin clip in the range cannot be rendered: `clip N (plugin 'id') cannot be exported: ...`. Build the plugins first (`scripts/build-plugins.sh`) or set `ANIMATHIO_PLUGIN_DIR`; `render` and `render-seq` still draw placeholders and print `warning:` lines for plugins that did not load. An export whose output is the input project file itself is refused with `the output path is the open project file; choose a different file name` — the same rule covers the `--chapters` sidecar, so a render can never destroy the project.
 
-Export an offline H.264 + AAC MP4. Export steps the preview renderer frame by
-frame and encodes with the FilmCraft backend; it is never a recording of
-playback. `--from`/`--to` accept the same exact decimal-second or `Nticks` forms
+Export an offline video, an H.264 + AAC MP4 (the default) or a VP9 + Opus WebM. Export steps the
+preview renderer frame by frame and encodes with pure-Rust in-process encoders (the FilmCraft
+H.264 and AAC encoders for MP4; `effectcraft-vp9enc` and `effectcraft-opusenc` with the FilmCraft
+Matroska muxer for WebM); it is never a recording of playback and never starts an external encoder.
+`--format mp4|webm` picks the container. Without it a `.webm` output means WebM and anything else
+MP4; an explicit `--format` that contradicts a `.mp4`/`.webm` file name is an error. Both formats use
+the same render path, the same `--crf` scale and 48 kHz stereo audio at 128 kbit/s. WebM output
+carries no chapters (`--no-embed-chapters` is ignored; the `--chapters` sidecar still works), and
+its pure-Rust VP9 encoder is slower than the H.264 one. Dimensions must be even. `--from`/`--to` accept the same exact decimal-second or `Nticks` forms
 as `render --time`; the end is exclusive and defaults to the project duration.
 `--fps` overrides the project frame rate (e.g. `30` or `30000/1001`); `--crf` is
-the H.264 constant-quality target (0–51, lower is better). `--preset` uses the same
+the constant-quality target for either codec (0–51, lower is better). `--preset` uses the same
 `youtube_1080p`, `youtube_4k`, `shorts_vertical`, `square` and `portrait` table as the editor and
 MCP. It sets the export snapshot to the preset resolution and 30 fps without writing
 the project file. Quality defaults to CRF 18 with a preset or 23 otherwise;
@@ -149,13 +155,13 @@ the project file. Quality defaults to CRF 18 with a preset or 23 otherwise;
 
 Missing parent directories of `--output` are created. An existing file is never
 replaced silently: without `--overwrite` the command fails with an
-`already exists` error and leaves the file untouched. The MP4 is written to a
+`already exists` error and leaves the file untouched. The video is written to a
 temporary file in the destination directory and renamed into place only after a
 successful export, so a failed or interrupted run leaves no partial output.
 
 <!-- help:export -->
 ```text
-Export an offline H.264 + AAC MP4
+Export an offline video: H.264 + AAC MP4 or VP9 + Opus `WebM`
 
 Usage: animathio-cli export [OPTIONS] --output <OUTPUT> <PROJECT>
 
@@ -169,8 +175,10 @@ Options:
       --fps <FPS>            Output rate, e.g. 30 or 30000/1001
       --preset <PRESET>      Delivery preset: `youtube_1080p`, `youtube_4k`, `shorts_vertical`, `square` or `portrait`
       --crf <CRF>            Constant quality, 0..=51; lower is better (defaults to preset quality or 23)
+      --format <FORMAT>      Output container: `mp4` (H.264 + AAC) or `webm` (VP9 + Opus). Defaults to `webm` for an output ending in `.webm`, otherwise `mp4`
       --overwrite            Replace an existing output file instead of failing
-      --chapters <CHAPTERS>  Also write the project's markers as chapters to this sidecar file (`.txt` `YouTube` list, `.vtt` `WebVTT`, `.ffmeta` `FFmpeg` metadata). The MP4 muxer has no chapter atom, so chapters ship beside the video
+      --chapters <CHAPTERS>  Also write the project's markers as chapters to this sidecar file (`.txt` `YouTube` list, `.vtt` `WebVTT`, `.ffmeta` `FFmpeg` metadata)
+      --no-embed-chapters    Do not embed a Nero chapter atom (`chpl`) in the MP4. By default chapters are embedded when the project has markers in the exported range. `WebM` carries none
       --bench                Report wall time, fps and opt-in stage timings
   -h, --help                 Print help
 ```
@@ -181,6 +189,8 @@ animathio-cli export sample.amio -o out.mp4
 animathio-cli export sample.amio -o shorts.mp4 --preset shorts_vertical
 animathio-cli export sample.amio -o clip.mp4 --from 1.0 --to 3.0 --fps 30000/1001 --crf 18
 animathio-cli export sample.amio -o renders/out.mp4 --overwrite
+animathio-cli export sample.amio -o web.webm            # WebM, chosen by the extension
+animathio-cli export sample.amio -o web.webm --format webm --crf 30
 ```
 
 ## `validate`
@@ -392,7 +402,7 @@ Options:
       --max-lines <MAX_LINES>  Most lines per subtitle
       --style <STYLE>          Caption style for the clips added with `--output`: `classic` (default), `word-highlight`, `karaoke`, `pop`, `one-word` or `bold-outline` [default: classic]
       --position <POSITION>    Caption placement: `top`, `middle` or `bottom` (style default when omitted)
-      --accent <ACCENT>        Accent colour of the active word, `#RRGGBB[AA]`
+      --accent <ACCENT>        Accent color of the active word, `#RRGGBB[AA]`
       --max-words <MAX_WORDS>  Words per line for the caption style (0 fits the box width)
       --overwrite              Replace existing output files
   -h, --help                   Print help
@@ -416,8 +426,8 @@ the markers as JSON with times in Nticks and seconds. `markers PROJECT add` take
 `--output` is given (existing separate outputs require `--overwrite`).
 `markers PROJECT chapters` writes the markers as a chapter list (`--format youtube`, `vtt` or
 `ffmetadata`; stdout unless `--output`), and `export --chapters FILE` writes the same list as
-a sidecar for the exported range (the MP4 muxer has no chapter atom; embed an `ffmetadata`
-sidecar with `ffmpeg -i out.mp4 -i out.ffmeta -map_metadata 1 -codec copy final.mp4`).
+a sidecar for the exported range. MP4 exports also embed the markers inside the exported
+range as a Nero `chpl` chapter list by default; `export --no-embed-chapters` leaves them out.
 Markers move with ripple edits and autocut; see
 [architecture](./architecture#markers-and-beat-sync).
 
@@ -473,8 +483,8 @@ Arguments:
   <PROJECT>  Input project archive or project.json
 
 Options:
-      --clip <CLIP>                    Analyse a clip, including linked audio for a video clip
-      --track <TRACK>                  Analyse this track's audio mix
+      --clip <CLIP>                    Analyze a clip, including linked audio for a video clip
+      --track <TRACK>                  Analyze this track's audio mix
       --from <FROM>                    Inclusive analysis start in seconds or Nticks (requires --to)
       --to <TO>                        Exclusive analysis end in seconds or Nticks (requires --from)
       --min-bpm <MIN_BPM>              Slowest tempo considered, in beats per minute [default: 60]
@@ -484,7 +494,7 @@ Options:
       --add-markers                    Add a marker at each selected beat, saving atomically to the input unless --output is given
       --every <EVERY>                  With --add-markers: use every Nth beat [default: 1]
       --downbeats-only                 With --add-markers: only mark downbeats
-      --color <COLOR>                  With --add-markers: marker colour [default: cyan]
+      --color <COLOR>                  With --add-markers: marker color [default: cyan]
   -o, --output <OUTPUT>                Save an edited archive here instead of changing the input
       --overwrite                      Replace an existing output archive
   -h, --help                           Print help
@@ -616,9 +626,9 @@ Options:
       --padding-after <PADDING_AFTER>
           Silence retained after speech, in seconds or Nticks [default: 0.1]
       --clip <CLIP>
-          Analyse a clip, including linked audio for a video clip
+          Analyze a clip, including linked audio for a video clip
       --track <TRACK>
-          Analyse this track's audio mix
+          Analyze this track's audio mix
       --from <FROM>
           Inclusive analysis start in seconds or Nticks (requires --to)
       --to <TO>
@@ -813,7 +823,9 @@ Options:
 
 Retimes a clip and linked companions while keeping their source ranges. Speed is
 an exact decimal or rational multiplier, 1/16–16x at millionth precision. Optional
-linear ramp keys use local timeline ticks. Audio uses pitch-shifting varispeed.
+linear ramp keys use local timeline ticks. Audio follows the clip pitch setting
+(on for new clips, off for migrated projects). Pass `--maintain-pitch true` or
+`--maintain-pitch false` to change it with the speed edit in one undo step.
 Without ripple, overlapping results fail; ripple shifts unlocked trailing clips.
 
 ```sh
@@ -831,14 +843,24 @@ Arguments:
   <PROJECT>  Input .amio project archive
 
 Options:
-      --clip <CLIP>      Clip identity
-      --speed <SPEED>    Exact multiplier: 0.5, 2 or 3/2 (1/16..16, millionth precision)
-      --reverse          Play the source interval backwards
-      --ramps <RAMPS>    JSON array of {"time": ticks, "speed": {"numerator": n, "denominator": d}}
-      --ripple           Shift trailing clips on all unlocked tracks. Otherwise reject overlaps
-  -o, --output <OUTPUT>  Destination .amio archive
-      --overwrite        Replace an existing output archive
-  -h, --help             Print help
+      --clip <CLIP>
+          Clip identity
+      --speed <SPEED>
+          Exact multiplier: 0.5, 2 or 3/2 (1/16..16, millionth precision)
+      --maintain-pitch <MAINTAIN_PITCH>
+          Preserve audio pitch (true/false); omitted keeps the clip setting [possible values: true, false]
+      --reverse
+          Play the source interval backwards
+      --ramps <RAMPS>
+          JSON array of {"time": ticks, "speed": {"numerator": n, "denominator": d}}
+      --ripple
+          Shift trailing clips on all unlocked tracks. Otherwise reject overlaps
+  -o, --output <OUTPUT>
+          Destination .amio archive
+      --overwrite
+          Replace an existing output archive
+  -h, --help
+          Print help
 ```
 <!-- /help:set-clip-speed -->
 
@@ -954,9 +976,9 @@ Arguments:
 
 Options:
       --clip <CLIP>
-          Analyse this video clip
+          Analyze this video clip
       --track <TRACK>
-          Analyse all video on this track
+          Analyze all video on this track
       --sensitivity <SENSITIVITY>
           Sensitivity in 0..=1; higher detects smaller changes [default: 0.5]
       --min-shot-frames <MIN_SHOT_FRAMES>

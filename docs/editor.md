@@ -12,7 +12,7 @@ in the middle, the **Inspector** on the right and the **Timeline** underneath. D
 panels; View toggles them. Layout and track heights persist between sessions. The title bar carries the
 menus (File, Edit, View, Playback, Tools, Clip, Help), the project name, an MCP listener badge and Export.
 
-![The editor with library, viewer, inspector and timeline](/img/v2/editor-main.webp)
+![The editor with library, viewer, inspector and timeline](/img/v2/release-2-3-editor.webp)
 
 ## Library
 
@@ -20,7 +20,8 @@ Five tabs share the Library panel:
 
 - **Media**: imported media as a grid or list, with search, kind filters, durations, resolutions, audio
   waveforms and hover scrubbing of video posters. Click a card to add it at the playhead or drag it onto a
-  track. Ctrl+I imports without inserting.
+  track. Ctrl+I imports without inserting. The microphone button records audio straight into the library
+  (see [Record audio](#record-audio)).
 - **Elements**: text, shapes, LaTeX, graphs and third-party clip sources. See [Math objects](./math-objects).
 - **Effects**: video and audio effects, transitions, animation presets and **Write on**.
 - **Plugins**: installed-plugin inventory, versions and load status. See [Community plugins](./community-plugins).
@@ -30,6 +31,23 @@ Five tabs share the Library panel:
 ![The media pool as a thumbnail grid](/img/v2/editor-media.webp)
 
 ![The Titles tab and a lower third](/img/v2/editor-titles.webp)
+
+The Titles tab also has a **Typography** group (Title, Subtitle, Body, Caption and Heading 1 to 6 in Inter,
+with the 1.x sizes and weights). Text clips have a font weight and a font (DejaVu Sans or Inter) in the
+inspector.
+
+## Record audio
+
+**Record audio** (the microphone button in Library, Media, or File, Record audio) opens a recorder card. Pick an
+input or leave "System default", press **Record** and watch the level meter, which turns red at full scale (the
+take is distorted). **Stop** saves the take as a WAV asset named "Recording N.wav" in the library and, with
+"Add to timeline" on, places an audio clip where the playhead was when you pressed Record, on a free audio
+track. Both happen as one undo step. If the clip cannot be placed, the take still stays in the library and a
+notice says so. **Cancel** discards the take. If the microphone is missing, busy or blocked by your system's
+privacy settings, the card says so; on macOS the system asks for microphone permission the first time. Recording
+is off when `ANIMATHIO_AUDIO=none`.
+
+![The recorder mid-take](/img/v2/release-2-3-record-audio.webp)
 
 ## Viewer
 
@@ -77,7 +95,10 @@ Press M to drop a marker; markers snap and ride along with ripple edits. They al
 ## Speed and retiming
 
 Select a clip and open **Clip, Speed/Duration** (Ctrl+R), or use the inspector's Speed section. Set 6.25 to
-1600%, reverse, a duration in frames or linear ramp keys. Linked audio follows with varispeed. **Insert frame
+1600%, reverse, a duration in frames or linear ramp keys. Linked audio follows. **Maintain pitch** (on for new
+clips) keeps the audio pitch while the speed changes; turn it off for pitch-shifting varispeed. With ramp keys,
+select the clip to see its speed curve: drag a square handle to change a key's time and speed, and Alt-click a
+handle to remove it. Video above 1x speed is filtered over time instead of dropping frames. **Insert frame
 hold segment** splits at the playhead and inserts a held picture. See
 [the retiming rules](./architecture#clip-retiming).
 
@@ -90,10 +111,17 @@ and GPU renderers and is used by the gizmo and hit testing.
 
 ## Export
 
-**Export** opens a form with an MP4 path chooser, whole project, in and out range or a custom range, and the
+**Export** opens a form with a Format selector (MP4 with H.264 and AAC, the default, or WebM with VP9 and Opus;
+switching it rewrites a `.mp4` or `.webm` extension in the path), a path chooser, whole project, in and out range or a custom range, and the
 presets `youtube_1080p`, `youtube_4k`, `shorts_vertical`, `square` and `portrait`. Presets apply to a snapshot
 of the project and leave project settings unchanged. **Add to queue** or **Export now** snapshots the project
 into a job; the export queue (status bar) runs jobs one at a time with progress, ETA and cancel.
+
+MP4 exports embed the timeline markers inside the exported range as chapters (VLC, mpv and FFmpeg show them);
+`animathio-cli export --no-embed-chapters` turns that off. WebM carries no chapters. WebM is slower to encode
+than MP4.
+
+![The export dialog with the WebM format selected](/img/v2/release-2-3-export-webm.webp)
 
 ![The export dialog](/img/v2/editor-export.webp)
 

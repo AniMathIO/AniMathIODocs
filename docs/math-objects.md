@@ -53,6 +53,20 @@ Inline colours are supported: `\color{red}{x}`, `\textcolor{blue}{y}` and scoped
 `{\color{green} z}` keep their explicit colours, while unstyled glyphs inherit the clip colour.
 Write on also works with coloured formulas.
 
+### Describe a formula in words (optional)
+
+The LaTeX dialog has a collapsed **Describe in words** section. Type "the integral of x squared from 0 to 1", press
+**Convert to LaTeX** and the answer fills the formula field, where the live preview checks it: a reply that does
+not compile keeps **Add** disabled until you fix it, and you can edit the LaTeX freely. It is off until you set it
+up with an OpenAI-compatible server (OpenAI, Gemini's compatible endpoint, or a local Ollama or llama.cpp server,
+which keeps everything on your machine), a model name and, for online services, an API key. The key is stored in
+the operating system keyring and never in projects, settings or logs. Only pressing **Convert to LaTeX** sends
+anything, and only the text in the box. The command line and MCP server make no AI requests. See the
+[editor guide](https://github.com/AniMathIO/AniMathIO/blob/main/docs/editor-guide.md#describe-a-formula-in-words-optional-ai-assist)
+for setup and the data flow.
+
+![The Add math object dialog with Describe in words](/img/v2/release-2-3-math-assist.webp)
+
 ## Plots
 
 Plots use the graph plugin's function-of-x expression language. Parametric curves exist in the graph plugin

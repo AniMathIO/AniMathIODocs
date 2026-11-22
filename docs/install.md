@@ -7,32 +7,32 @@ description: "Installers for AniMathIO 2 on Windows, macOS and Linux, and how to
 
 # Install AniMathIO 2
 
-Download the installer from the [latest release page](https://github.com/AniMathIO/AniMathIO/releases/latest) (currently 2.2.0).
+Download the installer from the [latest release page](https://github.com/AniMathIO/AniMathIO/releases/latest) (currently 2.3.0).
 Every installer ships the desktop editor (`animathio`), the headless tool (`animathio-cli`) and the first-party
 plugin bundles.
 
 | Platform | File | Notes |
 | --- | --- | --- |
-| Windows | `animathio_2.2.0_x64-setup.exe` | NSIS installer. Unsigned, so SmartScreen warns: choose **More info**, then **Run anyway**. |
-| macOS | `AniMathIO_2.2.0_aarch64.dmg` | Apple Silicon. Unsigned and not notarized: right-click the app and choose **Open**. |
-| Linux (any distribution) | `animathio_2.2.0_x86_64.AppImage` | Make it executable and run it. The host provides the runtime libraries. |
-| Debian and Ubuntu | `animathio_2.2.0_amd64.deb` | Declares its runtime libraries as dependencies. |
+| Windows | `animathio_2.3.0_x64-setup.exe` | NSIS installer. Unsigned, so SmartScreen warns: choose **More info**, then **Run anyway**. |
+| macOS | `AniMathIO_2.3.0_aarch64.dmg` | Apple Silicon. Unsigned and not notarized: right-click the app and choose **Open**. |
+| Linux (any distribution) | `animathio_2.3.0_x86_64.AppImage` | Make it executable and run it. The host provides the runtime libraries. |
+| Debian and Ubuntu | `animathio_2.3.0_amd64.deb` | Declares its runtime libraries as dependencies. |
 
 ## Linux
 
 ```bash
-chmod +x animathio_2.2.0_x86_64.AppImage
-./animathio_2.2.0_x86_64.AppImage
+chmod +x animathio_2.3.0_x86_64.AppImage
+./animathio_2.3.0_x86_64.AppImage
 ```
 
 ```bash
-sudo apt install ./animathio_2.2.0_amd64.deb
+sudo apt install ./animathio_2.3.0_amd64.deb
 ```
 
 ## Flatpak
 
-The 2.2.0 source includes Flatpak build files for `com.animathio.AniMathIO`. A Flathub listing is
-pending; AniMathIO is not yet available from Flathub. See the
+The source includes Flatpak build files for `com.animathio.AniMathIO`. There is no Flathub listing, so
+build the Flatpak locally; AniMathIO is not available from Flathub. See the
 [Flatpak build instructions](https://github.com/AniMathIO/AniMathIO/blob/main/docs/flatpak.md)
 for building locally.
 
