@@ -90,7 +90,7 @@ hello package, so no network is needed.
 
 | Installed (SHA-256 verified) | Browse (live registry) |
 | --- | --- |
-| ![Installed plugins](https://github.com/AniMathIO/AniMathIO/blob/main/docs/screenshots/community-installed.png) | ![Community registry](https://github.com/AniMathIO/AniMathIO/blob/main/docs/screenshots/community-browse.png) |
+| ![Installed plugins](https://github.com/AniMathIO/AniMathIO/blob/v2.3.0/docs/screenshots/community-installed.png) | ![Community registry](https://github.com/AniMathIO/AniMathIO/blob/v2.3.0/docs/screenshots/community-browse.png) |
 
 ### Folders
 
@@ -908,7 +908,8 @@ vars) default to none.
 
 A complete clip-source plugin — a filled circle with a keyframeable radius and a
 colour, plus one host log line. This example is built and verified (compiles for
-`wasm32-wasip2`, ~108 KiB `.wasm`, packages as a valid `.amplugin`).
+`wasm32-wasip2`, ~117 KiB `.wasm`, packages as a valid `.amplugin`). Building it needs
+Rust 1.85 or newer, because wit-bindgen 0.63 uses the 2024 edition.
 
 **`plugins/examples/hello/Cargo.toml`**
 
@@ -923,7 +924,7 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-wit-bindgen = "0.40.0"
+wit-bindgen = "0.63.0"
 
 [workspace]
 ```
@@ -1242,9 +1243,10 @@ component's imports on the major version, so a plain source plugin built with th
 still declares the older minor and keeps loading on a 1.2 host. LaTeX selects
 `colored-source-plugin` and text `text-layout-source-plugin`; other source plugins retain
 `source-plugin`. Plugin versions: animations 1.2.0, audio-basic 1.2.0, effects-basic 1.1.0
-(the clipped slide), graph 1.4.0, import-manim 1.0.0, latex 1.3.0 (per-path inline color,
-normalized sizing, strict validation and preserved glyph holes), shapes 1.1.0, text 1.4.0
-(per-character slide, weighted and Inter text), trap 1.0.0 and the example 1.0.0. The frozen 1.0
+(the clipped slide), graph 1.5.0, import-manim 1.0.0, latex 1.3.0 (per-path inline color,
+normalized sizing, strict validation and preserved glyph holes), shapes 1.1.0, text 1.4.1
+(per-character slide, weighted and Inter text, word highlight that keeps the spaces), trap 1.0.0
+and the example 1.0.0. The frozen 1.0
 fixture and the explicit 0.2.x adapter retain older binaries; 0.1 packages are rejected.
 `plugins/examples/hello` demonstrates a canvas-coordinate scene. Install the WASI
 target and use `scripts/build-plugins.sh` to package all first-party components.
@@ -1270,7 +1272,7 @@ by older projects.
 
 ### Graph styling
 
-The bundled `org.animathio.graph` plugin (1.4.0, plugin API 1.1) accepts
+The bundled `org.animathio.graph` plugin (1.5.0, plugin API 1.1) accepts
 `stroke_width` (0.1–64, default 2) in reference pixels at a 540-pixel short edge,
 scaled by the same factor as the existing axes for plots, segments, circles
 and vectors. The existing `axis_color` and `grid_color` parameters accept RGBA
@@ -1283,6 +1285,13 @@ axis range independently to the canvas; useful for function-chart viewports. Gri
 lines stay inside those bounds, including when a chart is transformed into a
 smaller viewport.
 
+Tick labels sit centred below the x axis and right-aligned left of the y axis,
+clear of the axis lines. When the preferred side would leave the clip — an axis
+on the clip's edge (e.g. `y_min = 0` in `stretch` mode) or off-screen entirely
+(zero axes outside the plotted range) — the label is placed on the other side of
+its axis and finally clamped into the clip bounds; a label that cannot fit at
+all is omitted.
+
 Items can include `parametric x=cos(t) y=sin(t) from=0 to=6.283185307179586`.
 Both expressions accept the existing function grammar, with `t` as the parameter
 (`x` is an alias); the default domain is 0–2π. Invalid expressions, malformed,
@@ -1292,7 +1301,7 @@ endpoint follows the same curve. Sampling
 uses 256 base intervals with at most four subdivision levels; nonfinite
 evaluations or unresolved discontinuities break the path.
 This remains plugin data and needs no project schema change.
-The [showcase builders](https://github.com/AniMathIO/AniMathIO/blob/main/examples/showcase/README.md) exercise this with a unit
+The [showcase builders](https://github.com/AniMathIO/AniMathIO/blob/v2.3.0/examples/showcase/README.md) exercise this with a unit
 circle, independent function-chart axes and a subdued grid.
 
 Function plots are clipped to the graph viewport. Adaptive subdivision breaks

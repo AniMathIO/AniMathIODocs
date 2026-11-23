@@ -99,11 +99,12 @@ Rules that keep the layers honest:
 playback clock, CPU preview, built plugins or no plugins, private settings/cache paths).
 `editor/ui_tests` mounts the real editor in gpui's test window and exercises actions and
 shared panel handlers, asserting project and view state without devices or pixel snapshots.
+The test modules are grouped by feature and share the `Ui` harness and project fixtures.
 
 `apps/animathio/src/style/` holds the UI design tokens (`tokens.rs`: colour, radius, row
 height, type roles, alpha steps, dialog widths) and the shared components (`components.rs`:
 buttons, panel header, segmented control, tool panel, form rows, empty state, chips), as
-specified in [design.md](https://github.com/AniMathIO/AniMathIO/blob/main/docs/design.md). The `style_guard` test fails a source file that gains
+specified in [design.md](https://github.com/AniMathIO/AniMathIO/blob/v2.3.0/docs/design.md). The `style_guard` test fails a source file that gains
 ad-hoc colour or size literals beyond its recorded baseline.
 
 
