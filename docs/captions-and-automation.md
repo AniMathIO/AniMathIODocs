@@ -102,7 +102,10 @@ Markers can also be exported as chapters (a YouTube list or WebVTT).
 **Clip, Auto duck** lowers music under speech without touching the audio. Choose the voice clips or tracks
 and the music clips or tracks; AniMathIO detects voice activity and writes gain keyframes on the music, with
 adjustable depth, attack and release. The ducked spans are shaded before you apply. A music clip that already
-has gain keyframes is left alone unless you choose to replace them.
+has gain keyframes is left alone unless you choose to replace them. The panel is three labelled steps
+(Voice, Music, Preview): with a voice clip selected, the other unlocked audio tracks are suggested as the
+music, and a plain-language summary says how far the music drops, for how long and how many keyframes Apply
+writes as one undo step.
 
 ```bash
 animathio-cli duck talk.amio --voice-track 1 --music-track 2 --dry-run
@@ -113,7 +116,8 @@ animathio-cli duck talk.amio --voice-track 1 --music-track 2 --depth-db 15 --app
 
 The `org.animathio.audio-basic` plugin offers gain and trim, a 3-band EQ, a compressor, a noise gate, a
 high-pass filter, a voice-cleanup preset and `denoise`, a spectral gate. Denoise can learn the noise profile
-from a selected range or the in and out points, which is deterministic and undoable. Chains run on clips and
+from a selected range, the in and out points or a single selected range marker (**Learn noise from
+selection** on the Denoise card, or Clip, Learn denoise from selection), which is deterministic and undoable. Chains run on clips and
 tracks, in the same mixer for preview and export.
 
 ```bash

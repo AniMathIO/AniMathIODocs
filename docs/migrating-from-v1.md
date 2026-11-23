@@ -33,9 +33,9 @@ This describes authoring in 2.x; importing saved 1.x projects has the limitation
 | 1.x feature | Where it lives in 2.x | Status |
 | --- | --- | --- |
 | Video / image / audio resources, upload | Library → Media; Import media; kind filters, grid/list and drag to timeline | Moved |
-| Microphone audio recorder | Import recorded audio files in Media; no in-app recording ([#299](https://github.com/AniMathIO/AniMathIO/issues/299)) | Missing |
+| Microphone audio recorder | Library → Media → Record audio (microphone button, or File → Record audio…): choose the input, watch the level meter, Stop to add a WAV asset (and a clip at the playhead) as one undo step, Cancel to discard | Moved |
 | Plain text / Mafs text | Library → Elements → Text & formulas → Text; source and size in dialog/inspector | Moved |
-| Title, Subtitle, Body, Caption, Heading 1–6 typography | Titles has composition presets; Text has editable size; original styles and font weights await [#300](https://github.com/AniMathIO/AniMathIO/issues/300) | Missing |
+| Title, Subtitle, Body, Caption, Heading 1–6 typography | Library → Titles → Typography has all ten presets with the 1.x sizes (normalized to the shorter canvas edge) and weights, all in Inter; Font weight (100–900) and Font are inspector fields on any text clip | Moved |
 | LaTeX, matrix source, formula colour | Elements → Text & formulas → LaTeX; source, snippets, templates and colour in dialog/inspector | Moved |
 | Natural-language → LaTeX (Gemini) | No equivalent; optional integration tracked in [#302](https://github.com/AniMathIO/AniMathIO/issues/302) | Missing |
 | Mafs point, line segment, vector, polygon, circle, ellipse | Elements → Shapes & geometry; each has a configurable dialog and inspector | Moved |
@@ -43,14 +43,14 @@ This describes authoring in 2.x; importing saved 1.x projects has the limitation
 | Mafs Cartesian / polar coordinates | Elements → Graphs & grids → Cartesian grid / Polar grid; editable as separate layers | Moved |
 | Fade in/out, directional slide in/out, breathe | Effects → Animations: In / Out / Emphasis; inspector → Animations | Moved |
 | Mafs reveal in/out | Effects → zoom-in / zoom-out presets; LaTeX also has Write on | Moved |
-| Clip-path slide and per-character slide | Whole-clip slide and typewriter are alternatives; exact parity awaits [#301](https://github.com/AniMathIO/AniMathIO/issues/301) | Missing |
+| Clip-path slide and per-character slide | Clipped slide and Character slide presets (Effects → Animations, inspector → Animations); the importer maps the v1 options | Moved |
 | None, black-and-white, sepia, invert, saturate effects | Effects → Video effects; inspector → Effects (remove/bypass gives None) | Moved |
 | Audio mixer volume and mute | Track gain/mute/solo controls; clip inspector gain/mute; viewer monitor volume | Moved |
 | Background Fill | File → Project settings → background colour | Moved |
 | Element list, order, placement and timing | Multi-track timeline, track order and inspector → Transform | Moved |
 | Manim source import | File → Import Manim scene | Moved |
 | Canvas settings and MP4 video export | File → Project settings; Export dialog | Moved |
-| WebM video export | No WebM output backend ([#303](https://github.com/AniMathIO/AniMathIO/issues/303)) | Missing |
+| WebM video export | Export dialog → Format (WebM, VP9 + Opus); `animathio-cli export --format webm` | Moved |
 
 Plugin clip sources appear only in Elements. Plugins is the installed inventory:
 all loaded kinds, versions, enabled status and source directories. Titles contains
@@ -89,10 +89,17 @@ where they matter.
   `amount = 2`; the plugin must be installed to render them).
 - **Rotation is approximated as center-based.** v1 rotated around the Konva
   top-left corner; the importer warns and uses the element center.
-- **`fontWeight` is dropped** — the v2 text component has no weight
-  equivalent.
-- **Per-character text animation is flattened.** A character-level slide is
-  imported as a whole-element slide (warning).
+- **`fontWeight` is preserved** as the text plugin’s `font_weight` (100–900; values outside that range warn and use 400). An element that carries a `fontWeight` imports with the text plugin’s `font = inter`, so every weight (400 included) is the bundled Inter and the typeface does not change between weights; elements without one keep the default DejaVu Sans. Weighted shaping has no kerning.
+- **Slide options become the `slide` effect or the text glyph slide.** A
+  `slideIn`/`slideOut` with `useClipPath` ("Use Mask") is imported as a keyframed
+  `org.animathio.effects-basic` `slide` effect on the clip, and `textType: "character"` on a
+  text clip as keyframes of the text plugin's `char_slide*` parameters, instead of the
+  whole-element position slide (that already moves the content, so keeping both would move
+  it twice); every such animation adds a warning that the look differs. v1 never rendered the mask, and its per-character slide
+  existed for slide-in on text only, travelled from beyond the canvas edge and faded the
+  letters in; v2 slides within the element's own bounds, supports slide-out too and does
+  not fade. A character slide on a non-text element is ignored with a warning (a mask, if set,
+  still applies, otherwise the ordinary slide imports); a direction other than left/right/top/bottom imports as the plain slide.
 - **`mafsReveal` is a fallback.** It becomes an opacity fade, not a path reveal.
 - **Animations with no `targetId`, unknown types, or invalid durations are
   skipped**, as are animations targeting missing elements. A slide/fade whose
@@ -107,16 +114,19 @@ where they matter.
 
 ## Not covered by this importer
 
-- **WebM export.** Video clips import as ordinary video clips and export to H.264 + AAC
-  MP4 like any other project; WebM output is not implemented.
+- **WebM export** is available (VP9 video, Opus audio) through the Export dialog's Format
+  selector, `animathio-cli export --format webm`, the control `export` method and MCP `export_video`.
+  MP4 stays the default. Differences from MP4: WebM carries no chapters, the VP9 encoder is slower
+  than the H.264 one and its files are larger at the same CRF, and it has no VP8 or AV1 variants.
 - **Manim import** is a separate importer (`crates/import-manim`), run inside the
   `org.animathio.import-manim` plugin and used via `animathio-cli import-manim`, the
   editor's **Import Manim scene…** dialog or the MCP `import_manim_scene` tool.
 - **v1's Animations panel** (fade, slide, breathe, Mafs reveal) maps to the
   `org.animathio.animations` presets in the inspector's Animations section: `fade-in`,
   `fade-out`, `slide-in`, `slide-out`, `breathe` and `zoom-in`/`zoom-out` (reveal). v1's
-  clip-path slide and per-character slide have no preset; `typewriter-in` reveals text
-  one character at a time instead.
+  clip-path slide and per-character slide are the `clipped-slide-in/out` and
+  `character-slide-in/out` presets; `typewriter-in` is an alternative that reveals text
+  one character at a time, not a replacement.
 - **Round-tripping.** Import is one-way; there is no v2 → v1 export.
 
 ## Verifying an import
@@ -142,3 +152,12 @@ inputs remain accepted).
 This is not yet the complete M4 corpus: actual DOM-rasterized LaTeX/graph
 captures, historical serializers and user-authored projects remain to be added.
 The fixture README records provenance and regeneration instructions.
+
+## Pitch preservation and project schema
+
+Schema 8 stores a per-clip `maintain_pitch` boolean. Projects saved with schema
+1–7 and imported v1 clips keep it off, preserving the previous varispeed sound.
+New clips default to on; the option has no effect at normal playback speed.
+Enable **Maintain pitch** in the Speed inspector or Speed/Duration dialog to
+opt an older clip into time stretching. The change follows linked companions
+and is undoable. Saving writes schema 8; older editors reject that schema.

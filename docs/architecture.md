@@ -18,15 +18,17 @@ the render/audio/export data flow. The authority for these rules is
 | Crate | Owns |
 | --- | --- |
 | `core` | Plain project data (`Project`, `Track`, `Clip`, `ClipKind`, `Transform`, `Animation`), exact timeline arithmetic (`Time`, `FrameRate`), the `Command` mutation API with undo/redo, and pure `evaluate(&Project, Time) -> Scene`. Effects are plain data (`EffectInstance`: plugin id + effect id + numeric params); the `EffectProcessor` port is how the renderer asks a plugin host to run one. **No IO, GPU, decoder or UI dependencies.** |
-| `format` | Versioned `project.json` (schema version 7) and content-addressed `.amio` ZIP containers. Stream APIs support custom storage; filesystem save helpers validate and atomically replace targets using synced temporary files in the same directory. |
+| `format` | Versioned `project.json` (schema version 8) and content-addressed `.amio` ZIP containers. Stream APIs support custom storage; filesystem save helpers validate and atomically replace targets using synced temporary files in the same directory. |
 | `render` | Deterministic, GPU-free Vello CPU backend (the reference for tests and export), the clip-effect chain mechanics (rasterize a clip layer, hand each effect to the context's `EffectProcessor`, composite), an optional `gpu` feature with a Vello/wgpu `GpuBackend` for preview, embedded font shaping, the engine `ResourcePool`, `Frame` (RGBA8), PNG encoding and PNG/JPEG decoding. Also the shared `sample` demo project and the `FrameSource` video seam. |
-| `audio` | Engine-owned audio pools (one seekable `PcmReader` per asset; nothing holds a whole decoded asset), lazy block-wise resampling and channel mapping behind an LRU-budgeted cache, immutable mixer snapshots, Opus/Symphonia decoding, and cpal/rtrb device playback. No audio resources live in `Project`. Also pure offline beat detection (`detect_beats`). |
-| `media` | FilmCraft decode behind the `MediaBackend` trait (probe, frame-exact video seek, audio PCM), an LRU-budgeted engine `MediaPool` with prefetch, and the H.264 + AAC `Mp4Encoder` (BT.709-tagged). Untrusted-input limits (dimensions, frame counts, rates, checked arithmetic) are enforced before codec work. |
-| `export` | Deterministic offline MP4 export: steps `render(evaluate(project, t))` frame by frame plus the audio mixer, encoded with `Mp4Encoder`. Never a recording of playback. |
+| `audio` | Engine-owned audio pools (one seekable `PcmReader` per asset; nothing holds a whole decoded asset), lazy block-wise resampling and channel mapping behind an LRU-budgeted cache, immutable mixer snapshots, Opus/Symphonia decoding, cpal/rtrb device playback and microphone capture (`CaptureSource`/`Recorder`: an injectable source, so tests and `ANIMATHIO_AUDIO=none` never open an input device). No audio resources live in `Project`. Also pure offline beat detection (`detect_beats`). |
+| `media` | FilmCraft decode behind the `MediaBackend` trait (probe, frame-exact video seek, audio PCM), an LRU-budgeted engine `MediaPool` with prefetch, the H.264 + AAC `Mp4Encoder` and the VP9 + Opus `WebmEncoder` (pure-Rust `effectcraft-vp9enc` / `effectcraft-opusenc` with the FilmCraft Matroska muxer; both BT.709-tagged). Untrusted-input limits (dimensions, frame counts, rates, checked arithmetic) are enforced before codec work. |
+| `export` | Deterministic offline MP4 or WebM export (`export::Format`, `Settings::format`): steps `render(evaluate(project, t))` frame by frame plus the audio mixer, encoded with `Mp4Encoder` or `WebmEncoder`. Never a recording of playback. |
 | `transcribe` | Local automatic subtitles: whisper.cpp speech recognition behind the opt-in `whisper` cargo feature (whisper.cpp through the whisper-rs bindings; needs cmake, a C++ toolchain and libclang), on-demand SHA-256-verified model downloads with resumable atomic writes, 16 kHz mono audio preparation on top of `audio`, pure cue splitting (line/duration/overlap rules) and SRT/WebVTT reading and writing. Everything but the engine works without the feature. |
+| `assist` | Optional prose-to-LaTeX authoring for the Math dialog: one OpenAI-compatible `chat/completions` client (`ureq` + rustls; covers OpenAI, Gemini's compatible endpoint and local Ollama or llama.cpp), non-secret `AssistSettings` (base URL and model, no key field), a strict LaTeX-only prompt, reply cleaning (code fences, math delimiters, reasoning blocks, prose rejection) and a `CancelToken` that closes the connection of a request in flight. The API key is supplied by the editor from the OS keyring and never serialised or put in an error. An integration crate: no `core` dependency, no provider-specific behaviour in the editor core, not a plugin (the sandbox has no network). |
 | `control` | Local JSON-RPC 2.0 control protocol over a user-only socket/named pipe: methods (including `export`), token auth, headless handler and client. |
 | `plugin-api` | The WIT world (`crates/plugin-api/wit/plugin.wit`), the `plugin.toml` manifest format, `.amplugin` package (zip of `plugin.toml` + `plugin.wasm`), the inspector schema, guest SDK and first-party clip authoring helpers (`sources`). |
 | `plugin-host` | wasmtime Component Model runtime: loading/compiling plugins, the sandbox (fuel, epoch, memory, output caps), host imports (shape-text, svg-to-paths, typeset-math, typeset-math-colored, limits, log, and `read-sibling` for importers), ABI 1.2.0 (1.0.0 and 1.1.0 components load unchanged; the opt-in `colored-source-plugin` world adds per-path math colours) plus an explicit 0.2.x adapter, plugin scene resolution, pixel-effect plugins (`PluginHost::effects`, `effect_processor`: instance-pre cached components, a fresh fuel/memory/epoch-limited store per call, frame-size caps), animation presets (`PluginHost::animation_presets`, `animation_preset_command`) and importers (`PluginHost::importers`, `PluginHost::import`), and the community plugin trust model (`CommunityStore`: per-user plugin folder, global switch + per-plugin enabled set in `community-plugins.json`, verified install/uninstall, and `PluginHost::sync_community_plugins` / `unload_plugin` for hot load and unload). |
+| `text-layout` | The one text layout (embedded DejaVu Sans via parley: wrapping to the canvas width, line alignment, block centring on the canvas). `render` shapes every normalized `text-run` through it and the plugin host's ABI 1.3 `text-layout` import runs the same calls, so a plugin that redraws glyph clusters puts them where the renderer would. |
 | `typeset` | Host-side math typesetting: Typst as a library plus MiTeX for LaTeX→Typst conversion, turned into vector path outlines plus a tight bbox. |
 | `import-v1` | One-way importer for v1 `.animathio` projects (deflated JSON + base64 media). Still native (see "Importers" below). |
 | `import-manim` | One-way importer for Manim Community scene scripts (`.py`), parsed with a small pure-Rust Python parser (`pyparse`) whose node vocabulary follows tree-sitter-python. The app runs it only inside the `org.animathio.import-manim` importer plugin. |
@@ -36,8 +38,8 @@ the render/audio/export data flow. The authority for these rules is
 
 Video clips decode through `render::FrameSource` via the `media` crate's
 `MediaPool`, so real video frames appear in preview, the CLI and headless
-renders. `export` encodes MP4 (H.264 + AAC, BT.709-tagged) offline. WebM export
-and an FFmpeg fallback backend remain future work; `MediaBackend` is shaped so a
+renders. `export` encodes MP4 (H.264 + AAC) or WebM (VP9 + Opus), both BT.709-tagged, offline. An FFmpeg
+fallback backend remains future work; `MediaBackend` is shaped so a
 second backend can be added without touching callers.
 
 ## Layering
@@ -68,6 +70,8 @@ flowchart TD
     CTL --> HOST[plugin-host]
     HOST --> API[plugin-api · WIT/SDK]
     HOST --> TYPESET[typeset]
+    HOST --> TEXTLAYOUT[text-layout]
+    RENDER --> TEXTLAYOUT
     HOST --> CORE
     TYPESET --> CORE
 ```
@@ -95,19 +99,26 @@ Rules that keep the layers honest:
 playback clock, CPU preview, built plugins or no plugins, private settings/cache paths).
 `editor/ui_tests` mounts the real editor in gpui's test window and exercises actions and
 shared panel handlers, asserting project and view state without devices or pixel snapshots.
+The test modules are grouped by feature and share the `Ui` harness and project fixtures.
+
+`apps/animathio/src/style/` holds the UI design tokens (`tokens.rs`: colour, radius, row
+height, type roles, alpha steps, dialog widths) and the shared components (`components.rs`:
+buttons, panel header, segmented control, tool panel, form rows, empty state, chips), as
+specified in [design.md](https://github.com/AniMathIO/AniMathIO/blob/v2.3.0/docs/design.md). The `style_guard` test fails a source file that gains
+ad-hoc colour or size literals beyond its recorded baseline.
 
 
 `apps/animathio/src/editor.rs` owns view state and composes implementation modules
 under `editor/`: `menus`, `workspace`, `viewer`, `transport`, `timeline_view`,
 `fields`, `audio_effects` (inspector audio-effect cards), `animations` (the inspector
-Animations section and the Effects-tab preset library), `video_effects` (inspector video-effect cards), `inspector_view`, `media_pool`, `math` (Elements cards, typed object dialog and inspector), `titles` (Titles tab), `dialogs`, `export_panel`
+Animations section and the Effects-tab preset library), `video_effects` (inspector video-effect cards), `inspector_view`, `inspector_units` (how the inspector shows numbers and colors: one hex format, degrees, font size as a percentage of the short edge, framed swatches), `media_pool`, `recording` (the Media tab's "Record audio" card), `math` (Elements cards, typed object dialog and inspector), `tool_panel` (the pieces the floating tool panels share: body, sections, status lines, the segmented choice, slider rows and check rows around `style::ToolPanel`), `titles` (Titles tab), `dialogs`, `export_panel`
 (export queue popover), `start_screen`, `templates`, `clip_ops`, `commands`, `project_io`,
 `control_bridge`, `playback_glue`, `timeline_thumbnails`, `actions` and `update_check`
 (at most one GitHub releases lookup per 24 h, a dismissable newer-release notice,
 opt-out in Preferences or with `ANIMATHIO_NO_UPDATE_CHECK=1`, silent on failure) and
 `community_plugins` (Installed/Browse UI, injected bounded registry transport in
 `apps/animathio/src/editor/community_plugins/registry.rs`, verified background installs,
-and the shared Preferences "Community plugins" switch: re-reads the trust
+and the "Community plugins" switch (one control, in Library → Plugins; Preferences links to it): re-reads the trust
 settings and calls `PluginHost::sync_community_plugins`, then refreshes the plugin list and
 re-renders, so plugins load and unload without a restart).
 Shared drawing/resource helpers live in
@@ -121,6 +132,29 @@ in view state. Ripple trim uses one `Command::Batch` on the source track;
 Shift+Delete uses `RippleDelete`. The ruler and export range share half-open bounds.
 The audio device clock stays master at every shuttle speed; with no output device a signed
 monotonic clock stands in.
+
+Microphone recording keeps capture outside the project model. `animathio_audio::CaptureSource`
+lists input devices and opens one as a polled `CaptureStream`; `Recorder` owns the open stream,
+keeps the take as 16-bit PCM (at most two channels, capped at `MAX_RECORDING_BYTES`) and
+measures a live `Level` (peak and RMS) at every poll. A poll landing between the device
+callback's frames carries the torn frame into the next poll (`CaptureStream::drain`), so the
+channels never swap, and a callback that finds the ring full drops whole frames and counts
+them (`Recorder::dropped_frames`, surfaced as a warning in the record card). `CpalCapture` is
+the real device source; `NullCapture` never opens anything and explains why; `SyntheticCapture`
+replays scripted samples for tests. `EditorEnv::capture` chooses the source: production uses
+`CpalCapture` unless `ANIMATHIO_AUDIO` is `none`/`off`/`0`, and the headless test environment
+uses `NullCapture`. The editor opens the device on Record, polls it from its 25 ms tick (meter
+and elapsed time), and on Stop hands the take to a background task that encodes the WAV
+(`encode_wav`), hashes the asset id and decode-checks it while the card shows "Saving
+recording…"; when it lands, the bytes enter the asset store exactly like an imported file and
+one undoable `Command::Batch` (`AddAsset`, plus `AddTrack` and `AddClip` where the playhead
+was when Record was pressed, with "Add to timeline at the record position" on; an empty
+"Audio" track is reused, and a failed command leaves no asset bytes or decoded pool entry
+behind) applies on the interface thread. Cancel, a new or opened project, or closing the editor drops the take and
+closes the device — with a take live or saving, replacing the project or closing the window
+asks first — and the project is untouched until Stop. A device error mid-take ends the take
+and keeps the audio delivered so far. There is no control or MCP method for recording: it
+needs a person at a microphone.
 
 Audible shuttle lives in `crates/audio` (`Speed`, `BlockGenerator`, `varispeed`).
 `Player::set_speed` restarts the session at the latency-corrected position like a seek.
@@ -339,9 +373,9 @@ flowchart LR
         H --> S[export::Exporter::export]
         S --> T[render(evaluate(project, t)) per frame]
         S --> U[Mixer::mix per inter-frame block]
-        T --> V[media::Mp4Encoder]
+        T --> V[media::Mp4Encoder / WebmEncoder]
         U --> V
-        V --> W[out.mp4]
+        V --> W[out.mp4 / out.webm]
     end
 ```
 
@@ -384,10 +418,16 @@ flowchart LR
   layouts (ITU-R BS.775 fold-down to stereo, mono duplication, stereo mean). `Player` consumes the ring buffer and updates the latency-corrected
   master clock. The device callback only consumes the ring; `Player::now()` is
   quantized to callbacks and freezes on underflow. Clip and track audio-effect
-  chains run inside `Mixer::mix` (see [Audio effects](#audio-effects)).
+  chains run inside `Mixer::mix` (see [Audio effects](#audio-effects)). Before
+  clip effects, retimed clips with `Clip::maintain_pitch` enabled use bounded,
+  deterministic WSOLA segments; identity playback and disabled pitch preservation
+  retain their previous sampling paths (see [Clip retiming](#clip-retiming)).
 - **Export.** Export steps the render path frame by frame —
   `render(evaluate(project, t))` per frame plus the audio mixer's snapshot for
-  each inter-frame block — and encodes with `media::Mp4Encoder`. It is never a
+  each inter-frame block — and encodes with `media::Mp4Encoder` or, for the WebM format,
+  `media::WebmEncoder` (VP9 + Opus; the Opus packets are 20 ms and interleaved with the video by
+  presentation time, the first one starting before zero by the Opus pre-skip, written as the
+  track's `CodecDelay`). The format changes only the encoder behind the same loop. It is never a
   recording of playback.
 
 ## Audio effects
@@ -486,8 +526,8 @@ existing key's outgoing interpolation. Unanimated edits update base parameters.
 
 ## Animation presets
 
-Presets (fade, slide, zoom, pop, spin, bounce, wipe, typewriter, breathe, shake,
-hop, flash) come from the `org.animathio.animations` plugin on the API 1.1
+Presets (fade, slide, clipped slide, character slide, zoom, pop, spin, bounce, wipe,
+typewriter, breathe, shake, hop, flash) come from the `org.animathio.animations` plugin on the API 1.1
 `animation-preset-plugin` world; there is no preset table in the core or the apps.
 `PluginHost::animation_preset_command` places the window (in at the clip start, out
 at its end, emphasis centred), samples the clip's current values at the window's
@@ -499,7 +539,16 @@ result is ordinary keyframes, so rendering, export and saved projects never depe
 on the plugin, and one undo restores the previous keys exactly. Easings that core
 keyframes cannot interpolate natively (ease-in/out, back, bounce, elastic) are
 sampled by the plugin into linear segments. The typewriter presets keyframe the
-text plugin's `reveal` parameter (the fraction of characters shown). The control
+text plugin's `reveal` parameter (the fraction of characters shown). The clipped slide animates the `progress`, `direction` and `clip` parameters
+of the first-party `slide` effect: a curve target `effect:<plugin>:<effect>:<param>`
+names an effect parameter, and when the clip's chain has no such effect the host adds it
+(with the plugin's default parameters) in the same batch, so one undo removes the keys
+and the effect together (a bypassed instance is re-enabled in the batch instead of
+animated silently). The character slide keyframes the text plugin's `char_slide*`
+parameters, because only the text plugin knows the shaped glyphs (ABI 1.3 `layout-text`
+host import, which runs the same `text-layout` crate layout as the renderer). A clip with a
+caption style owns its own motion, so the preset refuses it. `EffectProcessor::is_identity` lets a resting effect skip the layer path
+(plugins declare it in manifest metadata `effect.<id>.identity`). The control
 methods `animations.list`/`animations.apply`, the MCP tool `apply_animation_preset`,
 the CLI `animations` subcommand and the editor's inspector section all go through
 this one function (`animathio_control::animation_preset_command`).
@@ -581,8 +630,8 @@ processor, a missing plugin, a rejected parameter or a sandbox violation fails t
 with `render::Error::Effect`; the frame is never silently rendered unfiltered.
 
 The eight former builtins (`grayscale`, `sepia`, `invert`, `saturate`, `brightness`,
-`contrast`, `blur`, `opacity`) are the first-party `org.animathio.effects-basic` plugin
-(`plugins/effects-basic`). Schema-2 projects migrate by mapping the old `kind` to the
+`contrast`, `blur`, `opacity`) and the clipped `slide` reveal are the first-party
+`org.animathio.effects-basic` plugin (`plugins/effects-basic`). Schema-2 projects migrate by mapping the old `kind` to the
 plugin id and a lower-case effect id; parameter names are unchanged. Light handling is
 documented in the plugin source: color filters run in linear light, `invert` on encoded
 channels, `blur` on premultiplied linear light.
@@ -617,6 +666,46 @@ builder returns one `Command::Batch` and a fresh link group; it stores no runtim
 resources in the project. `_title_preset` / `_title_field` are opaque plugin JSON
 metadata for the editor's grouped text inspector. CPU library thumbnails are
 rendered off-thread and cached in editor session state by project canvas size.
+
+## AI-assisted LaTeX
+
+`crates/assist` backs the optional "Describe in words…" section of the Math dialog (user guide:
+`docs/editor-guide.md`). It is an integration beside the core, not a plugin: plugins run in a
+sandbox without network access, and the core must stay free of provider behaviour.
+
+- **One protocol.** `Converter::convert` builds an OpenAI-compatible `POST <base>/chat/completions`
+  (`HttpConverter`, blocking `ureq` with rustls, no redirects, 10 s connect and 60 s total
+  timeouts; only loopback targets (`localhost`, `127.0.0.0/8`, `::1`) bypass proxies, LAN hosts
+  honour the proxy environment). OpenAI, Gemini's OpenAI-compatible endpoint and local Ollama
+  or llama.cpp servers differ only in settings. `http://` is accepted only for local-network
+  hosts, and an `Authorization` header is never sent over plain `http://` to a host that is not
+  loopback (`Endpoint::new` returns `AssistError::InsecureKey`; the setup form refuses to store
+  such a key). Reply bodies are capped at 1 MiB (`reply too large`) and server error text is
+  redacted of the key before it is shortened.
+- **Explicit action only.** The editor calls it from the Convert button, on a dedicated worker
+  thread (the call blocks; the result returns through a oneshot channel), with the description
+  text alone. Dropping the panel cancels a request in flight. `HttpConverter` runs the blocking `ureq` call on an inner
+  worker thread while the caller polls the `CancelToken` every 25 ms, so `Cancelled` returns
+  immediately on every platform (`Agent::shutdown`, still called, does not wake a blocked read on
+  Windows). Once cancel is observed it wins over a result that has just arrived. The abandoned
+  worker owns copies of its inputs, touches no application state and ends with the request or the
+  60 s global timeout; the editor also drops the result.
+- **Secrets.** `assist.json` (`editor_env::config_file`) holds only `base_url` and `model`. The
+  key is stored in the operating system keyring through GPUI's credential API (Secret Service or
+  the Flatpak Secret portal, Windows Credential Manager, macOS Keychain) in one entry per
+  origin, `animathio-assist:<scheme>://<host>:<port>` with default ports written out, so the
+  `http` and `https` servers of one host never share a key. The editor touches the keyring only
+  for a user action (opening Set up, Save, Remove, Convert), never when the Math dialog is
+  built; `assist.json` and the per-origin key status are read once into a global cache that Save
+  refreshes. Convert reads the key for online services, for a local server only once Set up has
+  found a key for it, and never for a plain `http://` network server. The key is passed in an
+  `Endpoint` whose `Debug` redacts it. Error text is scrubbed of the key.
+- **Injection.** `EditorEnv::assist` is the `Converter` the editor uses (the real client in
+  production, a mock in `ui_tests`); `animathio-assist`'s tests run the client against an
+  in-process loopback server.
+- **Insertion.** A reply goes through `clean_latex` and then into the formula field, where the
+  existing LaTeX plugin preview validates it (`strict_errors`); Add is the ordinary math-object
+  `Command` (one undo step). The CLI and MCP surface have no network-using tool.
 
 ## Automatic subtitles
 
@@ -718,9 +807,17 @@ rendered off-thread and cached in editor session state by project canvas size.
 - **Chapters.** The control layer's `chapters` helper turns the markers into a chapter list
   (a YouTube-style `M:SS Title` block, `WebVTT` chapters or FFmpeg `;FFMETADATA1`), shared by
   the CLI (`markers chapters`, `export --chapters`), the control method `chapters.export` and
-  MCP `export_chapters`. The MP4 muxer (the media backend) has no chapter atom and patching
-  `moov` would shift every chunk offset, so chapters ship as sidecars; `ffmpeg -i v.mp4 -i
-  chapters.ffmeta -map_metadata 1 -codec copy out.mp4` embeds them without re-encoding.
+  MCP `export_chapters`. The sidecars stay (`--chapters`,
+  `chapters.export`); the MP4 export also embeds the markers inside the exported range as a
+  Nero `chpl` list in `moov/udta` by default (`Settings::embed_chapters`, `--no-embed-chapters`,
+  the `export_video` tool's chapter option). The media backend's MP4 writer cannot add a user box, so
+  `export::chapters` patches the finished file: it rebuilds `moov` (replacing an older
+  `chpl`), shifts every `stco`/`co64` entry that pointed behind the old `moov` by exactly
+  its size change (faststart puts `mdat` behind it; a plain layout is untouched), walks
+  64-bit and to-end box sizes, and fails the export with `Error::Chapters` instead of
+  writing a damaged file (fragmented MP4, malformed boxes, or an `stco` entry that would
+  overflow 32 bits). Tests decode the export with and without chapters and compare every
+  frame and sample.
 - **Editor.** The `markers` editor module owns the panel, the marker dialog and the ruler
   flags (painted by `support`); `timeline` makes markers snap targets and hit-tests them.
   Markers are selected on the ruler (click, Shift/Ctrl-click toggles, drag moves the whole
@@ -742,8 +839,11 @@ editor, CLI (`duck`) and MCP (`auto_duck`): voice activity from the autocut sile
 over the dry transcription mix, merged regions, then clip-local `gain` keyframes applied as
 one `Command::Batch`, targeting the union of selected audio clips and whole music tracks
 (see [Auto-ducking](./mcp#auto-ducking)). The editor's `ducking` module owns
-the ephemeral review state (voice/music pickers, sliders, background analysis, timeline overlay of
-the ducked spans). The `denoise` audio effect is
+the ephemeral review state (voice/music pickers with suggested default music tracks, sliders,
+background analysis, a plain-language summary of the proposal and a timeline overlay of the
+ducked spans). Learned denoise profiles are `control::learn_noise_command` batches of
+`SetAudioEffectParam` (`noise_0`..`noise_15`, `noise_profile`) written from a bounded
+In/Out or range-marker selection; the profile lives in the project, never in the mixer. The `denoise` audio effect is
 streaming spectral gating inside `org.animathio.audio-basic`; its noise profile is a
 per-bin minimum over ~1 s of smoothed power, so its memory is about as long as the mixer's
 state warm-up; whatever the warm-up leaves, the output stays a pure function of the project.
@@ -819,7 +919,10 @@ timeline times (keys beyond a shortened end are retained). `Clip::source_time`
 is used by evaluation, so CPU/GPU preview, exports and `FrameSource` all read the
 same clock. Reverse starts at the exclusive source end minus one tick. Splits
 and head trims retain the original curve phase, so their source samples stay
-continuous; merge accepts true split pairs only. The source-limit guards use
+continuous (a pitch-preserved head trim differs from the uncut clip for up to two
+64-hop segments after the cut, then is identical: the first new segment has no
+predecessor and the join after it blends against a differently aligned neighbour);
+merge accepts true split pairs only. The source-limit guards use
 mapped source bounds. Extending a retimed clip past its retained source interval
 is rejected; reset/retime the interval instead. Retimed transition handles clamp
 to the retained interval.
@@ -839,21 +942,110 @@ frames reading that source frame, and ripples the tail and unlocked trailing
 clips. Each linked pair gets independently linked head, hold and tail segments.
 Audio holds are silent. Other clips spanning the insertion point are unchanged.
 
-The mixer samples the same source clock on its existing output block lattice,
-with linear sample interpolation for retimed audio, in either direction. This is
-**varispeed**: pitch changes with speed. Maintain-pitch stretching and antialias
-filtering for large speedups are deferred. Identity clocks keep the existing
-bit-exact mixer path. Clip effects run after retiming; track effects run after
-mixing, and all output remains independent of seek order.
+Schema 8 adds `Clip::maintain_pitch`. New clips enable it and so does the serde
+default for a schema-8 clip that lacks the field (the same as `Clip::new` and the v1
+importer); the 7 -> 8 migration writes `false` into every clip of an older project,
+preserving the previous sound. The
+serializable, invertible `Command::SetClipMaintainPitch` updates the clip and
+linked companions atomically; locked companions reject the edit.
+
+With pitch preservation off, the mixer retains linear-interpolated varispeed
+(pitch changes with speed). With it on, non-unit rates and ramps use pure-Rust
+WSOLA in `crates/audio/src/stretch.rs`, shared by preview and export. Native-rate
+20 ms grains overlap at 10 ms hops; normalized multichannel correlation searches
+within 5 ms of each exact source-clock anchor. All channels share the selected
+shift. Reverse reads the grains backwards; frame holds remain silent. Each
+64-hop segment reconstructs eight warm-up grains from a fixed entry point, and
+adjacent segments crossfade for one hop. Two independent reconstructions of a tone
+differ by a phase, so crossfading them as they are would cancel it (a dip every 640
+ms): each segment is first slid onto its predecessor's tail by the lag (at most 5 ms,
+the smallest of the best-correlating ones) found from the two raw segments alone. The
+slide is full size at the join and ramps linearly to zero across the segment (a cubic
+read, a pitch change of lag over 30720 frames, under 0.8% and typically a few cents),
+so the next join sees an unshifted tail and no lag accumulates or depends on earlier
+segments: the result is still a pure function of the clip. Tests hold the per-hop RMS
+of stretched sine and chirp within 20% of the median across the resets, forward and
+reverse, at half and double speed. The cache key covers the source end the stretcher
+may read (the recorded `source_length`, or for a clock without one the integral to the
+clip's end), so a tail trim never reuses segments of the longer clip. A bounded 16 MiB cache only avoids
+recomputation: cold seeks, eviction and arbitrary request boundaries produce the
+same samples. Temporary memory and seek work are independent of asset length.
+This is a basic time stretcher: transients and extreme rates can produce artifacts;
+it is not a formant-preserving voice processor. A constant 1x clip (reversed or
+not) never uses the stretcher: it already preserves pitch and reads samples one for
+one. Segments that lie wholly before the clip's first (dissolve-extended) frame are
+not blended in, so the clip start is not faded. The overlap
+search treats silence as no information (a silent candidate never beats a real match;
+a silent reference keeps the nominal anchor), source bounds round outwards like the
+varispeed path, and the shared cache evicts least recently used segments (a segment
+larger than the budget is never cached and never flushes the rest).
+
+Video above 1x is filtered rather than decimated. `evaluate` gives each video
+`SceneClip` a `source_taps` list when the clip's source clock covers about two or
+more source frames per output frame: `round(speed)` source times (at most 16) spaced
+evenly through an interval one output frame wide and centred on the frame's own time,
+read through the exact retiming clock, so ramps and reverse work (centred, so the
+average sits where the single point sample of 1x lies and the picture does not jump
+when the tap count goes from 1 to 2). The renderer (CPU and GPU preview alike) averages
+the frames due at those times, alpha-weighted per pixel with integer rounding, a box
+filter over time that turns dropped-frame aliasing into motion blur. A source reports
+which decoded frame each tap lands on (`FrameSource::frame_index`), and taps on the
+same frame are fetched once and weighted by their number, so a source slower than the
+taps costs less and the filter does not change; frames are read in place from the media
+pool's `Arc`s (`FrameSource::shared_frame_at`, no copy per tap) and summed a chunk of
+pixels at a time (no frame-sized accumulator). Known limit: the tap count follows the
+speed against the *project* frame rate because the project model holds no source frame
+rate; a source faster than the project (for example 60 fps footage at 2x in a 30 fps
+project) is therefore sampled by fewer taps than it has frames in the span and keeps
+some aliasing. Frame indices are the nominal `floor(t * rate)` and assume the stream
+starts at media time 0 (the decoder API reports no start offset, so a source with a
+leading offset may attribute a tap near a frame boundary to the neighbouring frame); a
+variable-rate source reports no index at all and its taps are grouped by shared decoded
+frame instead. At or near 1x,
+slow motion, holds and stills there are no taps and the path is the exact point
+sample. Output stays a pure function of the scene and the frame source.
+
+Identity rates retain the existing bit-exact mixer path with either setting.
+Clip effects run after retiming; track effects run after mixing. Shuttle
+varispeed is a separate playback transport and still changes pitch.
 
 The editor's `retime` module provides the Speed inspector section and exact
 percentage/frame-key parsing. The Speed/Duration dialog accepts constant speed,
 duration or ramp keys; editing duration quantizes the implied ratio to a millionth
 (and may differ by a tick/frame boundary). Existing subframe ramp keys survive an
-unchanged dialog submission. Ctrl+R opens the dialog from the timeline; the Rate
-Stretch tool and graphical ramp handles are deferred. The CLI's
+unchanged dialog submission (keys are shown and compared on the clip's own clock, see
+below). Ctrl+R opens the dialog from the timeline; the Rate
+Stretch tool respects the clip pitch setting. Speed ramps have graphical handles on the
+timeline (see below). The CLI's
 `animathio-cli set-clip-speed` and `animathio-cli freeze-frame` and the MCP tools
-route through the shared commands and source-limit guards.
+route through the shared commands and source-limit guards. The CLI accepts
+`--maintain-pitch true` or `--maintain-pitch false`; MCP accepts optional
+`maintain_pitch`. Omitting the option preserves the clip setting. The inspector
+and Speed/Duration dialog expose a **Maintain pitch** checkbox.
+
+**Speed-ramp handles.** For the selected clip the timeline draws a faint 100% guide
+and, when it has ramp keys, the speed curve (log scale, 6.25% to 1600%, 100% in the
+middle) and a square handle per key (`apps/animathio/src/speed_ramp.rs` holds the geometry
+and commands). Dragging a handle moves the key in time (between its neighbours, at least
+one frame from each) and in speed (whole percent, magnetic at 100%); Alt-click a handle
+removes the key; Alt-click the selected clip adds a key at the pointer on the current
+curve, and the inspector's **Add speed key at playhead** does the same at the playhead,
+so nothing changes until the new key is dragged (the speed is interpolated in millionth
+units, one rounding to the nearest unit). A press inside a trim-edge zone always trims
+(a key drawn on a clip edge is changed from the dialog), fade and keyframe handles come
+first too, a pointer outside the clip block never grabs a key and a clip row too short
+for the lane shows no keys and takes no Alt-click. Every gesture ends in exactly one
+`Command::SetClipSpeed` with the new key list, so it is one undo step, follows linked
+companions and passes the same source-limit and overlap checks as the dialog (no ripple).
+The clip's length changes with its curve.
+
+Keys live on the ramp's own clock (`ClipTimeMap::phase` ticks ahead of the clip, left by
+head trims and splits), so a key is drawn at `key.time - phase` and handles exist only
+for keys inside the clip. `SetClipSpeed` rebuilds the clock from the clip's first tick
+(phase zero), so the editor sends the keys rebased by `ClipTimeMap::local_ramps(length)`:
+keys outside the clip are dropped and exactly interpolated keys are put at the cut, which
+keeps the curve inside the clip unchanged; the Speed/Duration dialog shows and compares its
+ramp text the same way. The curve is evaluated by `ClipTimeMap::speed_at_curve`.
 
 ## Mathematical object workflow
 
@@ -906,9 +1098,10 @@ and exports. Build them with `scripts/build-plugins.sh`; schema-1 and schema-2 p
 migrate automatically to plugin clips and plugin effects when loaded.
 
 Animation presets are plugins too: `org.animathio.animations` offers fade, slide, zoom,
-pop, spin, bounce, wipe and typewriter in/out presets plus breathe, shake, spin, hop and
+pop, spin, bounce, wipe, typewriter, clipped slide and character slide in/out presets plus breathe, shake, spin, hop and
 flash emphasis. Pick them in the inspector's **Animations** section (In / Out / Emphasis,
-with a duration stepper) or the Effects library, through the `apply_animation_preset` MCP
+with a duration stepper and a **Preset options** row of buttons that cycle each option, such
+as Direction or Clip to text bounds; the Effects library shows the same row) or the Effects library, through the `apply_animation_preset` MCP
 tool or `animathio-cli animations apply`. A preset becomes ordinary keyframes in one undo
 step, so projects render and export without the plugin.
 

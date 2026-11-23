@@ -97,7 +97,7 @@ surfaced by `animathio-cli mcp` without protocol changes.
 | `command.apply` | `{ command }` | — (applied through the shared history) |
 | `history.undo` / `history.redo` | — | whether an edit was undone/redone |
 | `render.frame` | `{ params: { time, width, height, output? } }` | `{ size, base64?, path? }` |
-| `export` | `{ params: { output, from?, to?, settings?, overwrite? } }` | destination path (after completion) |
+| `export` | `{ params: { output, from?, to?, settings?, overwrite? } }` | destination path (after completion); `settings` is `{ frame_rate?, crf, embed_chapters?, format? }`; `format` is `"mp4"` (default, H.264 + AAC) or `"webm"` (VP9 + Opus), and a `.mp4`/`.webm` file name that contradicts it is an error; `embed_chapters` (default `true`) embeds the markers in the range as MP4 chapters (WebM carries none) |
 | `playback.seek` | `{ time }` | — |
 | `playback.play` / `playback.pause` | — | — |
 | `media.add` | `{ path }` | track_id, clip_id; bounded import and placement in one undo step, with a single video/audio probe before retaining bytes. The clip takes the probed media length (images: the project duration, else three seconds); placing a file that is already in the project reuses its asset |
@@ -146,7 +146,7 @@ writer creates them — but their nearest existing ancestor must be a directory.
 unless `overwrite` is `true`, and refuses an output that names the open project
 file with `invalid path: the output path is the open project file; choose a
 different file name` (both handlers: the connected editor and the headless
-`--project` mode), and writes the MP4 through a temporary file in the
+`--project` mode), and writes the video through a temporary file in the
 destination directory that is renamed into place only on success, so a cancelled
 or failed export never leaves a partial file. Control math/graph positions are
 normalized canvas fractions and their colors are `[r, g, b, a]` bytes. Durations
@@ -203,7 +203,7 @@ clears its undo history.
 | `set_playing` | Start / pause playback | |
 | `save_project` | Save to a path, or overwrite the current file | |
 | `render_frame` | Render one frame to PNG | base64 return, or written to a path |
-| `export_video` | Export an offline H.264 + AAC MP4 | `format` defaults to `mp4` and is the only supported value; creates missing parent directories; requires `overwrite: true` to replace an existing file; refuses an output that is the open project file; returns the written path |
+| `export_video` | Export an offline MP4 (H.264 + AAC) or WebM (VP9 + Opus) | `format` is `mp4` or `webm`; when omitted a `.webm` path selects `webm`, otherwise `mp4`; a format that contradicts a `.mp4`/`.webm` file name is rejected; `embed_chapters` (default `true`) embeds the markers as MP4 chapters and is ignored for WebM; creates missing parent directories; requires `overwrite: true` to replace an existing file; refuses an output that is the open project file; returns the written path |
 | `import_v1` | Import a v1 `.animathio` project, replacing the current one | |
 | `add_transition` | Add a transition on the cut between two adjacent clips | `kind`: `cross_dissolve` (default), `dip_to_black`, `dip_to_white`, `wipe` (+ `direction`: `left_to_right`/`right_to_left`/`top_to_bottom`/`bottom_to_top`); edit point by `between_clip_a` + `clip_b`, or by the nearest cut to `at_time_ms` (optionally on `track`); `duration_ms` is centred on the cut |
 | `list_transitions` | List transitions | id, track, clips, kind, `cut_ms`, `duration_ms` |
@@ -444,8 +444,19 @@ past the end of its media.
 
 `export_chapters` writes the markers as a chapter list: `youtube` (`0:00 Intro` lines, first
 chapter at 0:00, markers closer than `min_length_ms` merged), `vtt` (WebVTT chapters) or
-`ffmetadata` (embed with `ffmpeg -i v.mp4 -i chapters.ffmeta -map_metadata 1 -codec copy
-out.mp4`; the built-in MP4 muxer has no chapter atom).
+`ffmetadata` (for FFmpeg, or to embed in another container: `ffmpeg -i v.mp4 -i
+chapters.ffmeta -map_metadata 1 -codec copy out.mp4`).
+
+`export` and `export_video` also embed the markers inside the exported range in the MP4
+itself (MP4 only; WebM output has no chapter support, use the sidecar formats above), as a Nero `chpl` chapter list in `moov/udta` (read by VLC, mpv and FFmpeg), unless
+`settings.embed_chapters` / `embed_chapters` is `false`. Chapter times are relative to the
+start of the exported range; an unnamed marker becomes `Chapter N`, where `N` is its
+position among all the project's markers by time (markers outside the range still count, so
+the first chapter of a trimmed export may be `Chapter 3`), and unlike `chapters.export` the
+embedded list neither merges close markers nor adds an intro chapter; the list holds at most
+255 chapters (the `chpl` count is one byte) and keeps the first ones. Nothing is written
+when no marker is in range. If the chapter list cannot be added, the export fails with a
+`cannot embed chapters` error and no file is written.
 
 `detect_beats` decodes the project mix (or one clip, track or range) to 16 kHz mono, so
 clip and track gain apply and effect chains are ignored, then estimates the tempo and
@@ -614,7 +625,7 @@ transitions and automation behavior.
 
 Individual music targets must be audio clips on unlocked tracks. Voice clips (including resolved linked audio) cannot also be music targets. In the Auto duck panel, use the Music clips to duck buttons alongside the track buttons; CLI accepts repeated `--music-clip` ids.
 
-Denoise learning uses a noise-only interval inside an audio clip (32 ms to 30 s). The editor action Clip > Learn denoise from In/Out uses the selected audio clip and its first denoise instance. Add denoise first, then set In and Out around noise without speech. MCP `learn_noise` accepts the instance id explicitly. Learning uses the dry 16 kHz mono mix, including clip gain (track gain is excluded), with at most sixteen analysis frames. Sixteen 500 Hz power-density bands are stored as numeric effect parameters; the last band is extrapolated above 8 kHz. Learn again after changing clip gain or upstream processing. Undo restores the complete previous profile.
+Denoise learning uses a noise-only interval inside an audio clip (32 ms to 30 s). The editor action Clip > Learn denoise from selection (or the Learn noise from selection button on a denoise card) uses the selected audio clip and, from the menu, its first denoise instance. Add denoise first, then set In and Out around noise without speech, or select one range marker if no In/Out is set; the range is trimmed to the clip. MCP `learn_noise` accepts the instance id explicitly. Learning uses the dry 16 kHz mono mix, including clip gain (track gain is excluded), with at most sixteen analysis frames. Sixteen 500 Hz power-density bands are stored as numeric effect parameters; the last band is extrapolated above 8 kHz. Learn again after changing clip gain. Undo restores the complete previous profile.
 
 ## Scene cuts
 
@@ -626,3 +637,7 @@ Export and PNG output guards compare filesystem identity, including hard links a
 symlinks, and resolve missing path tails. Case handling follows the volume rather
 than the operating system. Concurrent filesystem changes after validation (TOCTOU)
 remain outside this guard. PNG outputs also refuse the open project path.
+
+`set_clip_speed` accepts optional `maintain_pitch` (boolean). Omission preserves
+the clip setting: on for new clips, off for migrated projects. A supplied value
+and the speed edit apply to linked companions in one undo step.
