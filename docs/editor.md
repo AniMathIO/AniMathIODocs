@@ -30,7 +30,7 @@ Five tabs share the Library panel:
 
 ![The media pool as a thumbnail grid](/img/v2/editor-media.webp)
 
-![The Titles tab and a lower third](/img/v2/editor-titles.webp)
+![The Titles tab showing composition presets](/img/v2/editor-titles.webp)
 
 The Titles tab also has a **Typography** group (Title, Subtitle, Body, Caption and Heading 1 to 6 in Inter,
 with the 1.x sizes and weights). Text clips have a font weight and a font (DejaVu Sans or Inter) in the

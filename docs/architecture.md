@@ -878,7 +878,7 @@ with the gizmo following the fitted bounds (`editor-media-fit.png`):
 
 ![Fit, Fill, Stretch and 1:1 on a 16:9 clip in a 9:16 project](/img/v2/media-fit-modes.webp)
 
-![Inspector Fit control and gizmo on a filled clip](/img/v2/editor-media-fit.webp)
+![Inspector Fit control and transform gizmo on a vertical clip](/img/v2/editor-media-fit.webp)
 
 Schema 6 migrates earlier media clips to stretch to preserve their appearance.
 Schema-5 template `media_fit` parameters are promoted to `Clip::fit` and removed;

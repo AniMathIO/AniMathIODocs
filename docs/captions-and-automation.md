@@ -17,7 +17,7 @@ changing the timeline where that makes sense, and apply as a single undo step. E
 with Whisper and adds the result as caption clips on a new `Subtitles` track. Progress and cancel live in a
 status-bar popover, like the export queue.
 
-![Generated subtitles on a Subtitles track with the progress popover](/img/v2/subtitles.webp)
+![Subtitle clips on the Subtitles track](/img/v2/subtitles.webp)
 
 The speech engine is whisper.cpp, built into the installers. No model ships with the app: pick `tiny`
 (78 MB), `base` (148 MB, default) or `small` (488 MB). AniMathIO downloads it once, on your confirmation,
@@ -75,7 +75,7 @@ offline, with no model or download. Pick the aspect and a smoothness, then Refra
 alongside the editor. The canvas changes in place and the videos' position and scale keys are replaced in one
 undo step.
 
-![Auto reframe settings and a vertical preview](/img/v2/editor-auto-reframe.webp)
+![Vertical video preview after reframing](/img/v2/editor-auto-reframe.webp)
 
 It is a visual-saliency heuristic without face recognition. Several subjects, busy backgrounds and camera
 motion can need manual correction afterwards.
